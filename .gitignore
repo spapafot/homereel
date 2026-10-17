@@ -1,0 +1,36 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+coverage
+playwright-report
+test-results
+
+# Rust / Tauri
+src-tauri/target
+src-tauri/gen/schemas
+
+# Secrets: Google OAuth client credentials
+.env
+.env.*
+src-tauri/google-oauth-client.json
+client_secret_*.json
+
+# ffmpeg sidecar is downloaded by scripts/fetch-ffmpeg.ps1, not committed
+src-tauri/binaries/*.exe
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.sw?
+
+# Synthetic playback test videos (scripts/make-poc-fixtures.ps1)
+poc-fixtures

@@ -1,0 +1,57 @@
+[package]
+name = "drivetube"
+version = "0.1.0"
+description = "A personal YouTube-style library for videos stored in Google Drive"
+authors = ["spapafot"]
+license = ""
+repository = ""
+edition = "2024"
+rust-version = "1.90"
+
+[lib]
+name = "drivetube_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.7.3", features = [] }
+serde_json = "1.0"
+
+[dependencies]
+tauri = { version = "2.12.4", features = [] }
+tauri-plugin-log = "2.10.1"
+tauri-plugin-opener = "2.7.2"
+tauri-plugin-single-instance = "2.5.4"
+tauri-plugin-window-state = "2.5.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+log = "0.4"
+thiserror = "2.0"
+# native-tls (SChannel on Windows) avoids the aws-lc C build that rustls pulls in by default.
+reqwest = { version = "0.13.5", default-features = false, features = [
+  "native-tls",
+  "http2",
+  "charset",
+  "system-proxy",
+  "json",
+  "stream",
+  "form",
+  "query",
+] }
+tokio = { version = "1.53", features = ["rt-multi-thread", "macros", "net", "sync", "time", "io-util", "fs", "process"] }
+tokio-util = "0.7.20"
+axum = { version = "0.8.9", default-features = false, features = ["http1", "tokio"] }
+futures-util = "0.3"
+sha2 = "0.11"
+base64 = "0.23"
+getrandom = "0.4"
+url = "2.5"
+keyring-core = "1.0.1"
+rusqlite = { version = "0.40.2", features = ["bundled"] }
+rusqlite_migration = "2.6.0"
+
+[target.'cfg(windows)'.dependencies]
+windows-native-keyring-store = { version = "1.1.0", default-features = false }
+
+[dev-dependencies]
+wiremock = "0.6.5"
+tempfile = "3.27"

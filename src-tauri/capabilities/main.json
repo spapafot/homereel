@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "main",
+  "description": "Permissions for the main DriveTube window. Other windows (such as the Drive preview window) get no IPC access.",
+  "windows": ["main"],
+  "permissions": ["core:default", "core:window:allow-set-fullscreen"]
+}

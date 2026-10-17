@@ -1,0 +1,113 @@
+@import 'tailwindcss';
+@import '@fontsource/roboto/400.css';
+@import '@fontsource/roboto/500.css';
+@import '@fontsource/roboto/700.css';
+@import 'material-symbols/outlined.css';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Colour tokens follow YouTube's desktop light and dark themes. */
+@theme inline {
+  --font-sans: 'Roboto', 'Arial', sans-serif;
+  --color-page: var(--dt-page);
+  --color-text: var(--dt-text);
+  --color-text-secondary: var(--dt-text-secondary);
+  --color-chip: var(--dt-chip);
+  --color-chip-hover: var(--dt-chip-hover);
+  --color-chip-active: var(--dt-chip-active);
+  --color-chip-active-text: var(--dt-chip-active-text);
+  --color-hover: var(--dt-hover);
+  --color-divider: var(--dt-divider);
+  --color-search-border: var(--dt-search-border);
+  --color-search-bg: var(--dt-search-bg);
+  --color-search-button: var(--dt-search-button);
+  --color-menu: var(--dt-menu);
+  --color-skeleton: var(--dt-skeleton);
+  --color-link: var(--dt-link);
+  --color-focus: #1c62b9;
+  --color-brand: #e5383b;
+  --color-progress: #ff0033;
+}
+
+:root {
+  color-scheme: light;
+  --dt-page: #ffffff;
+  --dt-text: #0f0f0f;
+  --dt-text-secondary: #606060;
+  --dt-chip: rgb(0 0 0 / 5%);
+  --dt-chip-hover: rgb(0 0 0 / 10%);
+  --dt-chip-active: #0f0f0f;
+  --dt-chip-active-text: #ffffff;
+  --dt-hover: rgb(0 0 0 / 5%);
+  --dt-divider: rgb(0 0 0 / 10%);
+  --dt-search-border: #d3d3d3;
+  --dt-search-bg: #ffffff;
+  --dt-search-button: #f8f8f8;
+  --dt-menu: #ffffff;
+  --dt-skeleton: rgb(0 0 0 / 10%);
+  --dt-link: #065fd4;
+}
+
+:root.dark {
+  color-scheme: dark;
+  --dt-page: #0f0f0f;
+  --dt-text: #f1f1f1;
+  --dt-text-secondary: #aaaaaa;
+  --dt-chip: rgb(255 255 255 / 10%);
+  --dt-chip-hover: rgb(255 255 255 / 20%);
+  --dt-chip-active: #f1f1f1;
+  --dt-chip-active-text: #0f0f0f;
+  --dt-hover: rgb(255 255 255 / 10%);
+  --dt-divider: rgb(255 255 255 / 20%);
+  --dt-search-border: #303030;
+  --dt-search-bg: #121212;
+  --dt-search-button: #222222;
+  --dt-menu: #282828;
+  --dt-skeleton: rgb(255 255 255 / 10%);
+  --dt-link: #3ea6ff;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--dt-text-secondary) transparent;
+}
+
+body {
+  margin: 0;
+  background-color: var(--dt-page);
+  color: var(--dt-text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+.material-symbols-outlined {
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+  user-select: none;
+}
+
+.material-symbols-outlined.filled {
+  font-variation-settings:
+    'FILL' 1,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+}
+
+.scrollbar-none {
+  scrollbar-width: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
