@@ -10,7 +10,7 @@ export const THEME_LABELS: Record<ThemePreference, string> = {
   light: 'Light theme',
 };
 
-const STORAGE_KEY = 'drivetube.theme';
+const STORAGE_KEY = 'homereel.theme';
 const DARK_QUERY = '(prefers-color-scheme: dark)';
 
 let currentPreference: ThemePreference = readPreference(STORAGE_KEY, THEME_PREFERENCES, 'system');

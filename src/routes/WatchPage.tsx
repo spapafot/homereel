@@ -4,31 +4,45 @@ import { Link, useNavigate, useSearchParams } from 'react-router';
 
 import { Avatar } from '@/components/common/Avatar';
 import { Button } from '@/components/common/Button';
-import { DriveGate } from '@/components/common/DriveGate';
+import { LibraryGate } from '@/components/common/LibraryGate';
 import { EmptyState } from '@/components/common/EmptyState';
 import { ErrorState } from '@/components/common/ErrorState';
 import { Icon } from '@/components/common/Icon';
-import { IconButton } from '@/components/common/IconButton';
 import { TagFrameDialog } from '@/components/people/TagFrameDialog';
+import { ShortsRow } from '@/components/shorts/ShortsRow';
 import { ChipBar, type Chip } from '@/components/video/ChipBar';
-import { EditTitleDialog } from '@/components/video/EditTitleDialog';
+import { MetadataParts } from '@/components/video/MetadataParts';
 import { DEFAULT_VIDEO_ORDER } from '@/components/video/order-chips';
 import { SaveToPlaylistDialog } from '@/components/video/SaveToPlaylistDialog';
 import { VideoMenu } from '@/components/video/VideoMenu';
 import { RelatedVideoItem, RelatedVideoSkeleton } from '@/components/watch/RelatedVideoItem';
 import { VideoPlayer, type PlayerHandle } from '@/components/watch/VideoPlayer';
 import { useVideoPeople } from '@/hooks/use-people';
-import { useToggleFavorite, useToggleWatchLater } from '@/hooks/use-video-actions';
-import { useNextInFeed, usePlaybackSource, useVideo, useVideoFeed } from '@/hooks/use-videos';
+import {
+  useRegeneratePreview,
+  useToggleFavorite,
+  useToggleWatchLater,
+} from '@/hooks/use-video-actions';
+import {
+  useNextInFeed,
+  usePlaybackSource,
+  useShortsRow,
+  useVideo,
+  useVideoFeed,
+} from '@/hooks/use-videos';
+import { useViewportHeight, useViewportWidth } from '@/hooks/use-viewport-size';
 import { useWatchList, type WatchList } from '@/hooks/use-watch-list';
 import { api, type VideoSummary } from '@/lib/api';
 import { toAppError } from '@/lib/app-error';
+import { cx } from '@/lib/class-names';
 import { formatRelativeDate } from '@/lib/format-relative-date';
 import { folderPath, playlistPath, watchPath, type WatchContext } from '@/lib/paths';
-import { showToast } from '@/lib/toast';
+import { relatedVideos } from '@/lib/related-videos';
 import { pickNextVideo } from '@/lib/up-next';
 import { patchVideoInCaches } from '@/lib/video-cache';
-import { dateCreated, videoDetailsLine } from '@/lib/video-meta';
+import { dateCreated, videoDetailsParts } from '@/lib/video-meta';
+import { FOLDER_KIND_LABELS, openVideoElsewhere, revealVideo } from '@/lib/video-source';
+import { watchColumns } from '@/lib/watch-layout';
 
 type RelatedMode = 'folder' | 'recent';
 
@@ -43,7 +57,7 @@ export function WatchPage() {
   const videoId = params.get('v') ?? '';
 
   return (
-    <DriveGate>
+    <LibraryGate>
       {videoId ? (
         <WatchContent
           key={videoId}
@@ -54,7 +68,7 @@ export function WatchPage() {
       ) : (
         <EmptyState icon="smart_display" title="No video selected" />
       )}
-    </DriveGate>
+    </LibraryGate>
   );
 }
 
@@ -82,10 +96,12 @@ function WatchContent({ videoId, contextFolderId, listId }: WatchContentProps) {
   const [relatedMode, setRelatedMode] = useState<RelatedMode>('folder');
   const playerRef = useRef<PlayerHandle>(null);
   const [tagPositionMs, setTagPositionMs] = useState<number | null>(null);
+  const regeneratePreview = useRegeneratePreview();
   // The player only applies this when the video first loads, so later progress updates to the
   // cached video do not make it jump.
   const startAtMs = resumePoint(video.data);
   const showFolder = relatedMode === 'folder' && folderId != null;
+  const columns = watchColumns(useViewportWidth(), useViewportHeight());
 
   // Up next follows the folder page's default order.
   const folderFeed = useVideoFeed(
@@ -97,8 +113,12 @@ function WatchContent({ videoId, contextFolderId, listId }: WatchContentProps) {
   const nextVideo = list ? pickNextVideo(list.videos, videoId) : nextInFolder;
   const listContextId = list?.id ?? null;
   const relatedFeed = showFolder ? folderFeed : recentFeed;
-  const related = (relatedFeed.data?.pages.flatMap((page) => page.videos) ?? []).filter(
-    (candidate) => candidate.id !== videoId,
+  const shortsFolderId = showFolder ? folderId : undefined;
+  const rowShorts = useShortsRow(shortsFolderId, videoId);
+  const related = relatedVideos(
+    relatedFeed.data?.pages.flatMap((page) => page.videos) ?? [],
+    videoId,
+    rowShorts,
   );
 
   // History and Continue watching change while watching; refresh them when leaving.
@@ -115,9 +135,11 @@ function WatchContent({ videoId, contextFolderId, listId }: WatchContentProps) {
     const context: WatchContext = listContextId ? { list: listContextId } : { folderId };
     navigate(watchPath(nextVideo.id, context));
   }, [navigate, nextVideo, listContextId, folderId]);
-  const openInDrive = useCallback(() => {
-    api.playbackOpenInBrowser(videoId).catch(() => showToast('Could not open Google Drive'));
-  }, [videoId]);
+  const videoSource = video.data?.source ?? 'drive';
+  const openElsewhere = useCallback(
+    () => openVideoElsewhere({ id: videoId, source: videoSource }),
+    [videoId, videoSource],
+  );
   const saveProgress = useCallback(
     (positionMs: number, durationMs: number) => {
       api
@@ -137,7 +159,8 @@ function WatchContent({ videoId, contextFolderId, listId }: WatchContentProps) {
   if (video.isError) {
     return toAppError(video.error).code === 'not_found' ? (
       <EmptyState icon="videocam_off" title="This video isn’t available anymore">
-        It may have been moved to the trash, deleted, or unshared in Google Drive.
+        It may have been deleted, moved to the trash or unshared, or its folder may no longer be in
+        your library.
       </EmptyState>
     ) : (
       <ErrorState error={video.error} onRetry={() => video.refetch()} />
@@ -150,10 +173,19 @@ function WatchContent({ videoId, contextFolderId, listId }: WatchContentProps) {
   ];
 
   return (
-    <div className="mx-auto flex max-w-[1754px] flex-col gap-6 px-6 pt-6 pb-12 lg:flex-row">
-      <div className="min-w-0 flex-1">
+    // YouTube's margins: 12px under the masthead, 16px at the sides and between the columns.
+    <div
+      className={cx(
+        'flex gap-4 px-4 pt-3 pb-12',
+        columns.twoColumns ? 'justify-center' : 'flex-col',
+      )}
+    >
+      <div
+        className={cx('min-w-0', columns.twoColumns ? 'flex-1' : 'mx-auto w-full')}
+        style={{ maxWidth: columns.maxPrimaryWidth }}
+      >
         {source.isError ? (
-          <div className="aspect-video w-full bg-skeleton">
+          <div className="aspect-video w-full rounded-xl bg-skeleton">
             <ErrorState error={source.error} onRetry={() => source.refetch()} />
           </div>
         ) : (
@@ -162,8 +194,11 @@ function WatchContent({ videoId, contextFolderId, listId }: WatchContentProps) {
             src={source.data?.url}
             title={video.data?.title ?? ''}
             hasNext={nextVideo != null}
+            // Only a list plays through on its own; a folder video stops at its end.
+            autoAdvance={list != null}
             onNext={goToNext}
-            onOpenInDrive={openInDrive}
+            videoSource={videoSource}
+            onOpenElsewhere={openElsewhere}
             startAtMs={startAtMs}
             onProgress={saveProgress}
           />
@@ -171,8 +206,10 @@ function WatchContent({ videoId, contextFolderId, listId }: WatchContentProps) {
         {video.data ? (
           <VideoDetails
             video={video.data}
-            onOpenInDrive={openInDrive}
             onTagFrame={() => setTagPositionMs(playerRef.current?.pauseAt() ?? 0)}
+            onUseFrameAsPreview={() =>
+              regeneratePreview.mutate({ videoId, positionMs: playerRef.current?.pauseAt() ?? 0 })
+            }
           />
         ) : (
           <div className="mt-3 flex flex-col gap-3" aria-hidden="true">
@@ -182,15 +219,22 @@ function WatchContent({ videoId, contextFolderId, listId }: WatchContentProps) {
         )}
       </div>
 
-      <aside className="flex w-full shrink-0 flex-col gap-3 lg:w-[344px]">
+      <aside
+        className="flex shrink-0 flex-col gap-3"
+        style={columns.twoColumns ? { width: columns.secondaryWidth } : undefined}
+      >
         {list && <PlaylistPanel list={list} currentId={videoId} />}
         <div>
           <ChipBar
+            flush
             chips={relatedChips}
             selectedId={showFolder ? 'folder' : 'recent'}
             onSelect={(id) => setRelatedMode(id as RelatedMode)}
           />
-          <div className="mt-3 flex flex-col gap-4">
+          <div className="mt-3 flex flex-col gap-2">
+            <div className="mb-2.5 empty:hidden">
+              <ShortsRow folderId={shortsFolderId} currentId={videoId} />
+            </div>
             {relatedFeed.isError && (
               <ErrorState error={relatedFeed.error} onRetry={() => relatedFeed.refetch()} />
             )}
@@ -273,42 +317,32 @@ function formatDate(date: string | null): string {
 
 function VideoDetails({
   video,
-  onOpenInDrive,
   onTagFrame,
+  onUseFrameAsPreview,
 }: {
   video: VideoSummary;
-  onOpenInDrive: () => void;
   onTagFrame: () => void;
+  onUseFrameAsPreview: () => void;
 }) {
-  const [dialog, setDialog] = useState<'playlist' | 'title' | null>(null);
+  const [isSaveOpen, setIsSaveOpen] = useState(false);
   const recognizedPeople = useVideoPeople(video.id).data ?? [];
   const toggleFavorite = useToggleFavorite();
   const toggleWatchLater = useToggleWatchLater();
   const folderUrl = video.folderId ? folderPath(video.folderId) : null;
   const created = dateCreated(video);
-  const headline = [
-    created ? `Created ${formatRelativeDate(created)}` : null,
-    videoDetailsLine(video),
-  ]
-    .filter(Boolean)
-    .join(' • ');
 
   return (
     <>
-      <div className="mt-3 flex items-start gap-2">
-        <h1 className="line-clamp-2 min-w-0 flex-1 text-xl leading-7 font-bold break-words">
-          {video.title}
-          {video.titleSource === 'ai' && (
-            <span
-              title="Title generated by Gemini from the video’s frames"
-              className="ml-2 inline-flex translate-y-[-2px] items-center gap-0.5 rounded bg-chip px-1.5 py-0.5 align-middle text-xs font-medium text-text-secondary"
-            >
-              <Icon name="auto_awesome" size={14} /> AI
-            </span>
-          )}
-        </h1>
-        <IconButton icon="edit" label="Edit title" onClick={() => setDialog('title')} />
-      </div>
+      <h1 className="mt-3 line-clamp-2 text-xl leading-7 font-bold break-words">{video.title}</h1>
+      {/* Where YouTube labels AI content; "Edit title" lives in the ⋯ menu, as on YouTube. */}
+      {video.titleSource === 'ai' && (
+        <p
+          title="Title generated by Gemini from the video’s frames"
+          className="flex w-fit items-center gap-0.5 text-xs leading-[18px] font-medium text-text-secondary"
+        >
+          <Icon name="info" size={14} /> AI
+        </p>
+      )}
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <Avatar name={video.folderName} colorKey={video.folderId ?? video.folderName} size={40} />
@@ -320,11 +354,12 @@ function VideoDetails({
             ) : (
               <p className="truncate text-base font-medium">{video.folderName}</p>
             )}
-            <p className="text-xs text-text-secondary">Google Drive folder</p>
+            <p className="text-xs text-text-secondary">{FOLDER_KIND_LABELS[video.source]}</p>
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button
+            size="large"
             icon="favorite"
             iconFilled={video.isFavorite}
             aria-pressed={video.isFavorite}
@@ -333,29 +368,49 @@ function VideoDetails({
             {video.isFavorite ? 'Favorited' : 'Favorite'}
           </Button>
           <Button
+            size="large"
             icon={video.isWatchLater ? 'check' : 'schedule'}
             aria-pressed={video.isWatchLater}
             onClick={() => toggleWatchLater.mutate({ video, value: !video.isWatchLater })}
           >
             Watch later
           </Button>
-          <Button icon="playlist_add" onClick={() => setDialog('playlist')}>
+          <Button size="large" icon="playlist_add" onClick={() => setIsSaveOpen(true)}>
             Save
           </Button>
-          <Button icon="open_in_new" onClick={onOpenInDrive}>
-            Open in Drive
-          </Button>
+          {video.source === 'local' ? (
+            <Button size="large" icon="folder_open" onClick={() => revealVideo(video)}>
+              Show in folder
+            </Button>
+          ) : (
+            <Button size="large" icon="open_in_new" onClick={() => revealVideo(video)}>
+              Open in Drive
+            </Button>
+          )}
           <VideoMenu
             video={video}
+            icon="more_horiz"
             extraActions={[
               { icon: 'person_add', label: 'Tag a person or pet', onSelect: onTagFrame },
+              {
+                icon: 'photo_camera',
+                label: 'Use this frame as preview',
+                onSelect: onUseFrameAsPreview,
+              },
             ]}
             className="bg-chip hover:bg-chip-hover"
           />
         </div>
       </div>
       <section className="mt-3 rounded-xl bg-chip p-3 text-sm">
-        <p className="font-medium">{headline}</p>
+        <p className="font-medium">
+          <MetadataParts
+            parts={[
+              created ? `Created ${formatRelativeDate(created)}` : null,
+              ...videoDetailsParts(video),
+            ]}
+          />
+        </p>
         <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-6 gap-y-1">
           <dt className="text-text-secondary">File name</dt>
           <dd className="break-all">{video.fileName}</dd>
@@ -381,27 +436,20 @@ function VideoDetails({
             {!video.recordedDate && created && (
               <span
                 className="text-text-secondary"
-                title="DriveTube reads the recording date from the video file in the background"
+                title="Homereel reads the recording date from the video file in the background"
               >
                 {' '}
-                · Drive’s modified date
+                · {video.source === 'local' ? 'the file’s modified date' : 'Drive’s modified date'}
               </span>
             )}
           </dd>
-          <dt className="text-text-secondary">Date uploaded</dt>
+          <dt className="text-text-secondary">
+            {video.source === 'local' ? 'Date added' : 'Date uploaded'}
+          </dt>
           <dd>{formatDate(video.createdTime)}</dd>
         </dl>
       </section>
-      <SaveToPlaylistDialog
-        videoId={video.id}
-        open={dialog === 'playlist'}
-        onOpenChange={(open) => setDialog(open ? 'playlist' : null)}
-      />
-      <EditTitleDialog
-        video={video}
-        open={dialog === 'title'}
-        onOpenChange={(open) => setDialog(open ? 'title' : null)}
-      />
+      <SaveToPlaylistDialog videoId={video.id} open={isSaveOpen} onOpenChange={setIsSaveOpen} />
     </>
   );
 }

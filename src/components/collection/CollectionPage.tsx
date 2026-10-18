@@ -4,11 +4,13 @@ import { Link } from 'react-router';
 import { EmptyState } from '@/components/common/EmptyState';
 import { ErrorState } from '@/components/common/ErrorState';
 import { Icon } from '@/components/common/Icon';
+import { MetadataParts } from '@/components/video/MetadataParts';
 import { Thumbnail } from '@/components/video/Thumbnail';
 import { VideoMenu, type VideoMenuAction } from '@/components/video/VideoMenu';
-import { thumbnailUrl, type VideoSummary } from '@/lib/api';
+import { useThumbnailUrl } from '@/hooks/use-thumbnail-url';
+import { type VideoSummary } from '@/lib/api';
 import { watchPath } from '@/lib/paths';
-import { videoMetaLine } from '@/lib/video-meta';
+import { relativeDateCreated } from '@/lib/video-meta';
 
 type CollectionPageProps = {
   title: string;
@@ -37,8 +39,9 @@ export function CollectionPage({
   headerActions,
   rowActions,
 }: CollectionPageProps) {
-  if (error) return <ErrorState error={error} onRetry={onRetry} />;
   const first = videos?.[0];
+  const firstThumbnailSrc = useThumbnailUrl(first?.id);
+  if (error) return <ErrorState error={error} onRetry={onRetry} />;
 
   return (
     <div className="flex flex-col gap-6 px-6 py-6 lg:flex-row lg:items-start">
@@ -46,7 +49,7 @@ export function CollectionPage({
         <div className="absolute inset-0 bg-neutral-700" aria-hidden="true">
           {first?.hasThumbnail && (
             <img
-              src={thumbnailUrl(first.id)}
+              src={firstThumbnailSrc}
               alt=""
               className="size-full scale-150 object-cover opacity-80 blur-3xl"
             />
@@ -115,7 +118,7 @@ export function CollectionPage({
                 to={watchPath(video.id, { list: listId })}
                 className="flex min-w-0 flex-1 gap-2 outline-none focus-visible:underline"
               >
-                <Thumbnail video={video} className="w-40 shrink-0 rounded-lg" />
+                <Thumbnail video={video} small className="w-40 shrink-0 rounded-lg" />
                 <div className="min-w-0 py-0.5">
                   <h3
                     className="line-clamp-2 text-base leading-[22px] font-medium break-words"
@@ -124,7 +127,7 @@ export function CollectionPage({
                     {video.title}
                   </h3>
                   <p className="mt-1 text-xs leading-[18px] text-text-secondary">
-                    {video.folderName} • {videoMetaLine(video)}
+                    <MetadataParts parts={[video.folderName, relativeDateCreated(video)]} />
                   </p>
                 </div>
               </Link>

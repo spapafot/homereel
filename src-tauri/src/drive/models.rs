@@ -1,6 +1,6 @@
 use serde::{Deserialize, Deserializer, Serialize};
 
-/// Drive `files` resource fields DriveTube requests.
+/// Drive `files` resource fields Homereel requests.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DriveFile {
@@ -36,11 +36,12 @@ pub struct VideoMediaMetadata {
     pub duration_millis: Option<u64>,
 }
 
+/// One page of a `files.list` response.
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct FileList {
-    #[serde(default)]
-    pub files: Vec<DriveFile>,
+pub struct Page<T> {
+    #[serde(default = "Vec::new")]
+    pub files: Vec<T>,
     #[serde(default)]
     pub next_page_token: Option<String>,
 }
@@ -50,19 +51,11 @@ pub struct DriveFolder {
     pub name: String,
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ParentList {
-    #[serde(default)]
-    pub files: Vec<FileParents>,
-    #[serde(default)]
-    pub next_page_token: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-pub struct FileParents {
-    #[serde(default)]
-    pub parents: Vec<String>,
+/// A folder as `files.list` returns it.
+#[derive(Debug, Clone, Deserialize)]
+pub struct FolderEntry {
+    pub id: String,
+    pub name: String,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

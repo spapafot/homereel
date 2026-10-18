@@ -1,4 +1,4 @@
-//! The "date created" orders. Drive cannot sort by the day a video was recorded, so DriveTube
+//! The "date created" orders. Drive cannot sort by the day a video was recorded, so Homereel
 //! lists every matching video and sorts them here (see `local_listings` for the paging).
 
 use std::cmp::Ordering;

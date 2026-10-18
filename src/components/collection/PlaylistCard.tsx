@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 
 import { Icon } from '@/components/common/Icon';
-import { thumbnailUrl } from '@/lib/api';
+import { useThumbnailUrl } from '@/hooks/use-thumbnail-url';
 
 type PlaylistCardProps = {
   title: string;
@@ -14,7 +14,8 @@ type PlaylistCardProps = {
 
 /** YouTube's playlist tile: a stacked thumbnail with the video count. */
 export function PlaylistCard({ title, videoCount, href, coverVideoId }: PlaylistCardProps) {
-  const [coverFailed, setCoverFailed] = useState(false);
+  const coverSrc = useThumbnailUrl(coverVideoId);
+  const [failedCoverSrc, setFailedCoverSrc] = useState<string>();
 
   return (
     <Link to={href} className="group flex flex-col gap-3 outline-none focus-visible:underline">
@@ -25,12 +26,12 @@ export function PlaylistCard({ title, videoCount, href, coverVideoId }: Playlist
           aria-hidden="true"
         />
         <div className="relative aspect-video overflow-hidden rounded-xl bg-skeleton">
-          {coverVideoId && !coverFailed ? (
+          {coverSrc && coverSrc !== failedCoverSrc ? (
             <img
-              src={thumbnailUrl(coverVideoId)}
+              src={coverSrc}
               alt=""
               loading="lazy"
-              onError={() => setCoverFailed(true)}
+              onError={() => setFailedCoverSrc(coverSrc)}
               className="size-full object-cover"
             />
           ) : (

@@ -8,7 +8,7 @@ type EditTitleDialogProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-/** Edits the title DriveTube shows. The Drive file keeps its name. */
+/** Edits the title Homereel shows. The file keeps its name. */
 export function EditTitleDialog({ video, open, onOpenChange }: EditTitleDialogProps) {
   const setTitle = useSetCustomTitle();
 
@@ -23,7 +23,7 @@ export function EditTitleDialog({ video, open, onOpenChange }: EditTitleDialogPr
       confirmLabel="Save"
       description={
         <>
-          Shown only in DriveTube. The file in Google Drive stays <strong>{video.fileName}</strong>.
+          Shown only in Homereel. The file keeps its name, <strong>{video.fileName}</strong>.
         </>
       }
       secondaryAction={

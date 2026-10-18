@@ -21,6 +21,7 @@ export function makeVideo(overrides: Partial<VideoSummary> = {}): VideoSummary {
     folderName: 'Holidays',
     hasThumbnail: true,
     md5Checksum: 'md5',
+    source: 'drive',
     isFavorite: false,
     isWatchLater: false,
     lastPositionMs: null,

@@ -13,12 +13,20 @@ type ChipBarProps = {
   selectedId: string;
   onSelect: (id: string) => void;
   sticky?: boolean;
+  /** Just the chips' height, as above the watch page's related videos; otherwise a 56px bar. */
+  flush?: boolean;
 };
 
 const SCROLL_STEP_PX = 320;
 
 /** YouTube's filter chip row, with arrow buttons when the chips overflow. */
-export function ChipBar({ chips, selectedId, onSelect, sticky = false }: ChipBarProps) {
+export function ChipBar({
+  chips,
+  selectedId,
+  onSelect,
+  sticky = false,
+  flush = false,
+}: ChipBarProps) {
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [canScrollBack, setCanScrollBack] = useState(false);
   const [canScrollForward, setCanScrollForward] = useState(false);
@@ -44,7 +52,7 @@ export function ChipBar({ chips, selectedId, onSelect, sticky = false }: ChipBar
 
   return (
     <div className={cx('z-10 bg-page', sticky && 'sticky top-14')}>
-      <div className="relative flex h-14 items-center">
+      <div className={cx('relative flex items-center', flush ? 'h-8' : 'h-14')}>
         {canScrollBack && (
           <div className="absolute left-0 z-10 flex h-full items-center bg-gradient-to-r from-page from-60% to-transparent pr-8">
             <IconButton

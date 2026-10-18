@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
 
 import { Avatar } from '@/components/common/Avatar';
-import { DriveGate } from '@/components/common/DriveGate';
+import { LibraryGate } from '@/components/common/LibraryGate';
 import { EmptyState } from '@/components/common/EmptyState';
 import { ErrorState } from '@/components/common/ErrorState';
 import { useFolders } from '@/hooks/use-videos';
@@ -11,7 +11,7 @@ const SKELETON_COUNT = 8;
 
 export function FoldersPage() {
   return (
-    <DriveGate>
+    <LibraryGate>
       <div className="px-6 py-6">
         <h1 className="text-4xl font-bold">Folders</h1>
         <p className="mt-2 text-sm text-text-secondary">
@@ -19,7 +19,7 @@ export function FoldersPage() {
         </p>
         <FolderGrid />
       </div>
-    </DriveGate>
+    </LibraryGate>
   );
 }
 

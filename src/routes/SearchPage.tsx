@@ -1,6 +1,6 @@
 import { useSearchParams } from 'react-router';
 
-import { DriveGate } from '@/components/common/DriveGate';
+import { LibraryGate } from '@/components/common/LibraryGate';
 import { EmptyState } from '@/components/common/EmptyState';
 import { ErrorState } from '@/components/common/ErrorState';
 import { VideoListRow, VideoListRowSkeleton } from '@/components/video/VideoListRow';
@@ -14,7 +14,7 @@ export function SearchPage() {
   const query = params.get('search_query')?.trim() ?? '';
 
   return (
-    <DriveGate>
+    <LibraryGate>
       {query ? (
         <SearchResults key={query} query={query} />
       ) : (
@@ -22,7 +22,7 @@ export function SearchPage() {
           Type in the search box at the top to find videos by title or file name.
         </EmptyState>
       )}
-    </DriveGate>
+    </LibraryGate>
   );
 }
 

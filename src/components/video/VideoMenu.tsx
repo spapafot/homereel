@@ -10,13 +10,15 @@ import {
 } from '@/components/common/menu-styles';
 import { useGeminiSettings } from '@/hooks/use-titles';
 import {
+  useRegeneratePreview,
   useRegenerateTitle,
   useToggleFavorite,
   useToggleWatchLater,
 } from '@/hooks/use-video-actions';
-import { api, type VideoSummary } from '@/lib/api';
+import type { VideoSummary } from '@/lib/api';
 import { cx } from '@/lib/class-names';
 import { showToast } from '@/lib/toast';
+import { revealVideo } from '@/lib/video-source';
 
 import { EditTitleDialog } from './EditTitleDialog';
 import { SaveToPlaylistDialog } from './SaveToPlaylistDialog';
@@ -31,23 +33,25 @@ type VideoMenuProps = {
   video: VideoSummary;
   /** Page-specific actions shown first, such as "Remove from Watch later". */
   extraActions?: VideoMenuAction[];
+  /** The watch page uses YouTube's horizontal ⋯ instead of the cards' ⋮. */
+  icon?: 'more_vert' | 'more_horiz';
   className?: string;
 };
 
 /** The ⋮ action menu on cards, rows and the watch page. */
-export function VideoMenu({ video, extraActions = [], className }: VideoMenuProps) {
+export function VideoMenu({
+  video,
+  extraActions = [],
+  icon = 'more_vert',
+  className,
+}: VideoMenuProps) {
   const [dialog, setDialog] = useState<'playlist' | 'title' | null>(null);
   const toggleFavorite = useToggleFavorite();
   const toggleWatchLater = useToggleWatchLater();
   const regenerate = useRegenerateTitle();
+  const regeneratePreview = useRegeneratePreview();
   const gemini = useGeminiSettings();
 
-  const openInDrive = () => {
-    api.playbackOpenInBrowser(video.id).catch((error: unknown) => {
-      console.error('Could not open the video in Google Drive', error);
-      showToast('Could not open Google Drive');
-    });
-  };
   const copyFileName = () => {
     navigator.clipboard
       .writeText(video.fileName)
@@ -60,7 +64,7 @@ export function VideoMenu({ video, extraActions = [], className }: VideoMenuProp
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild>
           <IconButton
-            icon="more_vert"
+            icon={icon}
             label="Action menu"
             className={cx('data-[state=open]:opacity-100', className)}
           />
@@ -111,10 +115,18 @@ export function VideoMenu({ video, extraActions = [], className }: VideoMenuProp
                 {video.aiTitle ? 'Regenerate AI title' : 'Generate AI title'}
               </DropdownMenu.Item>
             )}
+            <DropdownMenu.Item
+              className={MENU_ITEM_CLASS}
+              disabled={regeneratePreview.isPending}
+              onSelect={() => regeneratePreview.mutate({ videoId: video.id })}
+            >
+              <Icon name="image" />
+              Regenerate preview
+            </DropdownMenu.Item>
             <DropdownMenu.Separator className={MENU_SEPARATOR_CLASS} />
-            <DropdownMenu.Item className={MENU_ITEM_CLASS} onSelect={openInDrive}>
-              <Icon name="open_in_new" />
-              Open in Google Drive
+            <DropdownMenu.Item className={MENU_ITEM_CLASS} onSelect={() => revealVideo(video)}>
+              <Icon name={video.source === 'local' ? 'folder_open' : 'open_in_new'} />
+              {video.source === 'local' ? 'Show in folder' : 'Open in Google Drive'}
             </DropdownMenu.Item>
             <DropdownMenu.Item className={MENU_ITEM_CLASS} onSelect={copyFileName}>
               <Icon name="content_copy" />

@@ -10,52 +10,20 @@ import {
 } from 'react';
 
 import { Icon } from '@/components/common/Icon';
-import { api } from '@/lib/api';
-import { toAppError } from '@/lib/app-error';
+import type { VideoSource } from '@/lib/api';
+import { bufferedEndAt } from '@/lib/buffered-end';
 import { cx } from '@/lib/class-names';
 import { formatDuration } from '@/lib/format-duration';
-import { readPreference, writePreference } from '@/lib/local-preference';
-import { showToast } from '@/lib/toast';
+import { classifyError, type PlaybackError } from '@/lib/playback-error';
+import { isTypingTarget } from '@/lib/typing-target';
+import { readVolume, saveVolume, VOLUME_STEP } from '@/lib/volume-preference';
 
+import { PlaybackErrorOverlay } from './PlaybackErrorOverlay';
 import { ProgressBar } from './ProgressBar';
 
 const HIDE_CONTROLS_AFTER_MS = 2500;
 const SHORT_SEEK_SECONDS = 5;
 const LONG_SEEK_SECONDS = 10;
-const VOLUME_STEP = 0.05;
-const VOLUME_KEY = 'drivetube.volume';
-const VOLUME_LEVELS = Array.from({ length: 21 }, (_, step) => (step * VOLUME_STEP).toFixed(2));
-/** `MediaError.MEDIA_ERR_NETWORK`; other codes mean the file could not be decoded. */
-const MEDIA_ERR_NETWORK = 2;
-
-/** `noPicture`: the sound plays but the video codec can't be decoded, usually HEVC. */
-type PlaybackError = 'unsupported' | 'network' | 'noPicture';
-
-const ERROR_MESSAGES: Record<PlaybackError, { title: string; detail: string }> = {
-  unsupported: {
-    title: 'DriveTube can’t play this video’s format',
-    detail: 'Open it in Google Drive to watch it in your browser.',
-  },
-  network: {
-    title: 'The video stopped loading',
-    detail: 'Check your internet connection, then try again.',
-  },
-  noPicture: {
-    title: 'DriveTube can play this video’s sound but not its picture',
-    detail:
-      'It’s most likely HEVC (H.265), the format iPhones record in. Windows needs Microsoft’s ' +
-      'HEVC Video Extensions to show it. Install them from the Microsoft Store, then close and ' +
-      'reopen DriveTube.',
-  },
-};
-
-const PRIMARY_BUTTON =
-  'rounded-full bg-white px-4 py-2 text-sm font-medium text-black hover:bg-white/85';
-const SECONDARY_BUTTON = 'rounded-full bg-white/15 px-4 py-2 text-sm font-medium hover:bg-white/25';
-
-function openHevcStore() {
-  api.playbackOpenHevcStore().catch((error: unknown) => showToast(toAppError(error).message));
-}
 
 /** Lets the watch page act on the current frame, such as tagging a person in it. */
 export type PlayerHandle = {
@@ -67,8 +35,12 @@ type VideoPlayerProps = {
   src: string | undefined;
   title: string;
   hasNext: boolean;
+  /** Whether to go to the next video when this one ends, not just from the Next button. */
+  autoAdvance: boolean;
   onNext: () => void;
-  onOpenInDrive: () => void;
+  /** Where the video is, for the way out when it can't play. */
+  videoSource: VideoSource;
+  onOpenElsewhere: () => void;
   /** Resume point; playback starts here instead of at 0. */
   startAtMs?: number | null;
   /** Called every few seconds, on pause, at the end and when leaving, to save the resume point. */
@@ -77,33 +49,6 @@ type VideoPlayerProps = {
 };
 
 const PROGRESS_INTERVAL_MS = 5_000;
-
-function readVolume(): number {
-  return Number(readPreference(VOLUME_KEY, VOLUME_LEVELS, '1.00'));
-}
-
-function classifyError(error: MediaError | null): PlaybackError {
-  return error?.code === MEDIA_ERR_NETWORK ? 'network' : 'unsupported';
-}
-
-function isTypingTarget(target: EventTarget | null): boolean {
-  return (
-    target instanceof HTMLInputElement ||
-    target instanceof HTMLTextAreaElement ||
-    target instanceof HTMLSelectElement ||
-    (target instanceof HTMLElement && target.isContentEditable)
-  );
-}
-
-function bufferedEndAt(video: HTMLVideoElement): number {
-  const { buffered, currentTime } = video;
-  for (let index = 0; index < buffered.length; index += 1) {
-    if (buffered.start(index) <= currentTime && currentTime <= buffered.end(index)) {
-      return buffered.end(index);
-    }
-  }
-  return 0;
-}
 
 function PlayerPill({ children }: { children: ReactNode }) {
   return <div className="flex h-12 items-center rounded-full bg-black/30">{children}</div>;
@@ -139,8 +84,10 @@ export function VideoPlayer({
   src,
   title,
   hasNext,
+  autoAdvance,
   onNext,
-  onOpenInDrive,
+  videoSource,
+  onOpenElsewhere,
   startAtMs,
   onProgress,
   ref,
@@ -239,7 +186,7 @@ export function VideoPlayer({
     const clamped = Math.min(Math.max(next, 0), 1);
     setVolume(clamped);
     setIsMuted(clamped === 0);
-    writePreference(VOLUME_KEY, clamped.toFixed(2));
+    saveVolume(clamped);
   }, []);
 
   const toggleMute = useCallback(() => setIsMuted((muted) => !muted), []);
@@ -321,7 +268,7 @@ export function VideoPlayer({
       onMouseLeave={() => isPlaying && setControlsVisible(false)}
       className={cx(
         'relative w-full overflow-hidden bg-black',
-        isFullscreen ? 'h-full' : 'aspect-video max-h-[calc(100vh-169px)]',
+        isFullscreen ? 'h-full' : 'aspect-video max-h-[calc(100vh-169px)] rounded-xl',
         !controlsShown && 'cursor-none',
       )}
     >
@@ -341,7 +288,7 @@ export function VideoPlayer({
         onEnded={(event) => {
           setIsPlaying(false);
           reportProgress(event.currentTarget);
-          if (hasNext) onNext();
+          if (hasNext && autoAdvance) onNext();
         }}
         onLoadedMetadata={(event) => {
           const video = event.currentTarget;
@@ -381,31 +328,12 @@ export function VideoPlayer({
       )}
 
       {error && (
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/85 px-6 text-center text-white">
-          <Icon name="error" size={48} />
-          <p className="text-lg font-medium">{ERROR_MESSAGES[error].title}</p>
-          <p className="max-w-md text-sm text-white/70">{ERROR_MESSAGES[error].detail}</p>
-          <div className="mt-2 flex flex-wrap justify-center gap-2">
-            {error === 'noPicture' && (
-              <button type="button" onClick={openHevcStore} className={PRIMARY_BUTTON}>
-                Get HEVC Video Extensions
-              </button>
-            )}
-            {/* WebView2 checks for codecs once at startup, so retrying can't fix noPicture. */}
-            {error === 'network' && (
-              <button type="button" onClick={retry} className={SECONDARY_BUTTON}>
-                Retry
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={onOpenInDrive}
-              className={error === 'noPicture' ? SECONDARY_BUTTON : PRIMARY_BUTTON}
-            >
-              Open in Google Drive
-            </button>
-          </div>
-        </div>
+        <PlaybackErrorOverlay
+          error={error}
+          source={videoSource}
+          onRetry={retry}
+          onOpenElsewhere={onOpenElsewhere}
+        />
       )}
 
       {isFullscreen && controlsShown && (

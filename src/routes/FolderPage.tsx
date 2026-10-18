@@ -1,18 +1,19 @@
 import { useParams, useSearchParams } from 'react-router';
 
 import { Avatar } from '@/components/common/Avatar';
-import { DriveGate } from '@/components/common/DriveGate';
+import { LibraryGate } from '@/components/common/LibraryGate';
 import { ChipBar } from '@/components/video/ChipBar';
 import { DEFAULT_VIDEO_ORDER, isVideoOrder, ORDER_CHIPS } from '@/components/video/order-chips';
 import { VideoFeed } from '@/components/video/VideoFeed';
 import { useFolders, useVideoFeed } from '@/hooks/use-videos';
+import { FOLDER_KIND_LABELS } from '@/lib/video-source';
 
 /** A folder shown the way YouTube shows a channel's Videos tab. */
 export function FolderPage() {
   return (
-    <DriveGate>
+    <LibraryGate>
       <FolderContent />
-    </DriveGate>
+    </LibraryGate>
   );
 }
 
@@ -26,7 +27,9 @@ function FolderContent() {
   const feed = useVideoFeed({ folderId, order });
 
   const folder = folders.data?.find((candidate) => candidate.id === folderId);
-  const name = folder?.name ?? feed.data?.pages[0]?.videos[0]?.folderName ?? '';
+  const firstVideo = feed.data?.pages[0]?.videos[0];
+  const name = folder?.name ?? firstVideo?.folderName ?? '';
+  const kind = FOLDER_KIND_LABELS[folder?.source ?? firstVideo?.source ?? 'drive'];
 
   return (
     <div className="px-6">
@@ -40,8 +43,8 @@ function FolderContent() {
           )}
           <p className="mt-2 text-sm text-text-secondary">
             {folder
-              ? `Google Drive folder • ${folder.videoCount} ${folder.videoCount === 1 ? 'video' : 'videos'}`
-              : 'Google Drive folder'}
+              ? `${kind} • ${folder.videoCount} ${folder.videoCount === 1 ? 'video' : 'videos'}`
+              : kind}
           </p>
         </div>
       </header>

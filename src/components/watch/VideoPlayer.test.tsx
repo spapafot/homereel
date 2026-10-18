@@ -20,8 +20,10 @@ function renderPlayer(overrides: Partial<Parameters<typeof VideoPlayer>[0]> = {}
     src: SOURCE,
     title: 'Holiday clip',
     hasNext: false,
+    autoAdvance: false,
     onNext: vi.fn(),
-    onOpenInDrive: vi.fn(),
+    videoSource: 'drive' as const,
+    onOpenElsewhere: vi.fn(),
     ...overrides,
   };
   const view = render(<VideoPlayer {...props} />);
@@ -66,8 +68,19 @@ describe('VideoPlayer', () => {
     failWith(video, 4);
     await user.click(screen.getByRole('button', { name: 'Open in Google Drive' }));
 
-    expect(screen.getByText('DriveTube can’t play this video’s format')).toBeInTheDocument();
-    expect(props.onOpenInDrive).toHaveBeenCalledOnce();
+    expect(screen.getByText('Homereel can’t play this video’s format')).toBeInTheDocument();
+    expect(props.onOpenElsewhere).toHaveBeenCalledOnce();
+  });
+
+  it('should offer another player when a local video cannot be played', async () => {
+    const user = userEvent.setup();
+    const { video, props } = renderPlayer({ videoSource: 'local' });
+
+    failWith(video, 4);
+    await user.click(screen.getByRole('button', { name: 'Open in another player' }));
+
+    expect(screen.getByText('Open it in your default video player.')).toBeInTheDocument();
+    expect(props.onOpenElsewhere).toHaveBeenCalledOnce();
   });
 
   it('should offer a retry after a network error', () => {
@@ -88,12 +101,21 @@ describe('VideoPlayer', () => {
     expect(HTMLMediaElement.prototype.play).toHaveBeenCalled();
   });
 
-  it('should go to the next video when playback ends and a next video exists', () => {
-    const { video, props } = renderPlayer({ hasNext: true });
+  it('should go to the next video when playback ends with auto-advance on', () => {
+    const { video, props } = renderPlayer({ hasNext: true, autoAdvance: true });
 
     fireEvent.ended(video);
 
     expect(props.onNext).toHaveBeenCalledOnce();
+  });
+
+  it('should stay on the video when playback ends with auto-advance off', () => {
+    const { video, props } = renderPlayer({ hasNext: true, autoAdvance: false });
+
+    fireEvent.ended(video);
+
+    expect(props.onNext).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Next (Shift+N)' })).toBeInTheDocument();
   });
 
   it('should hide the Next button when there is no next video', () => {
@@ -111,7 +133,7 @@ describe('VideoPlayer', () => {
       await user.click(screen.getByRole('button', { name: 'Get HEVC Video Extensions' }));
 
       expect(
-        screen.getByText('DriveTube can play this video’s sound but not its picture'),
+        screen.getByText('Homereel can play this video’s sound but not its picture'),
       ).toBeInTheDocument();
       expect(HTMLMediaElement.prototype.pause).toHaveBeenCalled();
       expect(invoke).toHaveBeenCalledWith('playback_open_hevc_store');
@@ -122,7 +144,7 @@ describe('VideoPlayer', () => {
 
       loadMetadata(video, 0);
 
-      expect(screen.getByText(/close and reopen DriveTube/)).toBeInTheDocument();
+      expect(screen.getByText(/close and reopen Homereel/)).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /retry|try again/i })).toBeNull();
     });
   });

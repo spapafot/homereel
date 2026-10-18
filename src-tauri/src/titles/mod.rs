@@ -30,7 +30,7 @@ pub enum TitleError {
     Gemini(#[from] GeminiError),
     #[error("No frames could be read from this video.")]
     NoFrames,
-    #[error("The ffmpeg sidecar is missing. Reinstall DriveTube or run scripts/fetch-ffmpeg.ps1.")]
+    #[error("The ffmpeg sidecar is missing. Reinstall Homereel or run scripts/fetch-ffmpeg.ps1.")]
     FfmpegMissing,
     #[error("Gemini returned an empty title.")]
     EmptyTitle,
@@ -143,8 +143,9 @@ struct VideoSample {
 
 async fn sample_video(state: &AppState, video: &VideoFile) -> Result<VideoSample, TitleError> {
     let ffmpeg = ffmpeg::locate_ffmpeg().ok_or(TitleError::FfmpegMissing)?;
-    let url = state.media_proxy.media_url(&video.id);
-    // Both read the file over HTTP; running them together hides the probe's round trips.
+    let url = state.media_proxy.ffmpeg_input(&video.id).await?;
+    // Both read the file, over HTTP for Drive; running them together hides the probe's round
+    // trips.
     let (info, frames) = tokio::join!(
         ffmpeg::probe(&ffmpeg, &url),
         ffmpeg::extract_frames(&ffmpeg, &url, video.duration_ms),
@@ -206,7 +207,7 @@ mod tests {
         use crate::auth::token_manager::TokenManager;
         use crate::auth::token_store::{KeyringSecretStore, init_platform_store};
         use crate::config::{self, DRIVE_API_BASE, KEYRING_SERVICE};
-        use crate::drive::client::{DriveClient, VideoQuery};
+        use crate::drive::client::DriveClient;
         use crate::library::KnownFiles;
         use crate::protocol::media_proxy::MediaProxy;
         use std::sync::Arc;
@@ -226,19 +227,16 @@ mod tests {
             DRIVE_API_BASE,
             Arc::new(tokens),
         ));
-        let page = drive
-            .list_videos(&VideoQuery {
-                page_size: 4,
-                ..VideoQuery::default()
-            })
+        let mut files = drive.list_all_videos(&[]).await.unwrap();
+        files.truncate(4);
+        let known_files = KnownFiles::default();
+        known_files.remember(&files);
+        let proxy = MediaProxy::start(drive.clone(), known_files, Arc::default())
             .await
             .unwrap();
-        let known_files = KnownFiles::default();
-        known_files.remember(&page.files);
-        let proxy = MediaProxy::start(drive.clone(), known_files).await.unwrap();
         let ffmpeg = ffmpeg::locate_ffmpeg().unwrap();
 
-        for file in &page.files {
+        for file in &files {
             let duration_ms = file
                 .video_media_metadata
                 .as_ref()

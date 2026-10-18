@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { api, type VideoSummary } from '@/lib/api';
 import { toAppError } from '@/lib/app-error';
+import { bumpThumbnailVersion } from '@/lib/thumbnail-versions';
 import { showToast } from '@/lib/toast';
 import { patchVideoInCaches, replaceVideoInCaches } from '@/lib/video-cache';
 
@@ -73,6 +74,30 @@ export function useRegenerateTitle() {
           ? `New AI title saved: ${updated.aiTitle}. Your own title is still shown.`
           : `New title: ${updated.title}`,
       );
+    },
+    onError: (error) => showToast(toAppError(error).message, { persistent: true }),
+  });
+}
+
+type RegeneratePreviewInput = {
+  videoId: string;
+  /** The frame to use; without it Rust picks the most detailed of several. */
+  positionMs?: number;
+};
+
+/**
+ * Replaces a blurry or dark thumbnail with a sharp frame. Seeking in a 4K phone video over Drive
+ * takes 10–15 seconds per frame, so this runs for up to a minute.
+ */
+export function useRegeneratePreview() {
+  return useMutation({
+    mutationFn: ({ videoId, positionMs }: RegeneratePreviewInput) =>
+      api.thumbnailRegenerate(videoId, positionMs),
+    onMutate: () =>
+      showToast('Making a sharper preview… This can take up to a minute.', { persistent: true }),
+    onSuccess: (_, { videoId }) => {
+      bumpThumbnailVersion(videoId);
+      showToast('Preview updated');
     },
     onError: (error) => showToast(toAppError(error).message, { persistent: true }),
   });

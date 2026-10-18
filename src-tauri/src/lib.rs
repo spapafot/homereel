@@ -5,6 +5,7 @@ mod db;
 mod drive;
 mod error;
 mod ffmpeg;
+mod former_name;
 mod library;
 mod protocol;
 mod recorded_date;
@@ -18,6 +19,14 @@ use crate::state::AppState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let context = tauri::generate_context!();
+    if let Err(error) = former_name::move_data(&context.config().identifier, config::DATABASE_FILE)
+    {
+        // Starting anyway would create an empty library and strand the old one.
+        former_name::report_move_failure(&error);
+        std::process::exit(1);
+    }
+
     let log_level = if cfg!(debug_assertions) {
         log::LevelFilter::Info
     } else {
@@ -34,12 +43,13 @@ pub fn run() {
         }))
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(
             tauri_plugin_log::Builder::default()
                 .level(log_level)
                 .build(),
         )
-        // Thumbnails are served as `thumb://localhost/<driveId>` (http://thumb.localhost on
+        // Thumbnails are served as `thumb://localhost/<videoId>` (http://thumb.localhost on
         // Windows), so <img> tags can load them without exposing tokens to the page.
         .register_asynchronous_uri_scheme_protocol("thumb", |ctx, request, responder| {
             let app = ctx.app_handle().clone();
@@ -68,9 +78,9 @@ pub fn run() {
             let data_dir = app.path().app_data_dir()?;
             let state =
                 tauri::async_runtime::block_on(AppState::initialize(&cache_dir, &data_dir))?;
-            let connected = state.tokens.is_connected().unwrap_or(false);
+            let has_sources = state.has_sources().unwrap_or(false);
             app.manage(state);
-            if connected {
+            if has_sources {
                 app.state::<AppState>().date_scan.start(app.handle());
             }
             Ok(())
@@ -81,12 +91,19 @@ pub fn run() {
             commands::auth::auth_cancel,
             commands::auth::auth_disconnect,
             commands::library::videos_list,
+            commands::library::shorts_list,
             commands::library::video_get,
             commands::library::library_list,
             commands::library::folders_list,
             commands::playback::playback_source,
-            commands::playback::playback_open_in_browser,
+            commands::playback::playback_open_external,
+            commands::playback::video_show_in_folder,
             commands::playback::playback_open_hevc_store,
+            commands::sources::library_sources_get,
+            commands::sources::library_local_folder_add,
+            commands::sources::library_local_folder_remove,
+            commands::sources::library_drive_folder_set,
+            commands::sources::drive_folders_list,
             commands::user_state::video_set_favorite,
             commands::user_state::video_set_watch_later,
             commands::user_state::video_set_custom_title,
@@ -117,7 +134,8 @@ pub fn run() {
             commands::people::person_delete,
             commands::people::video_people,
             commands::people::video_frame_capture,
+            commands::thumbnails::thumbnail_regenerate,
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running DriveTube");
+        .run(context)
+        .expect("error while running Homereel");
 }

@@ -7,14 +7,12 @@ use tokio_util::sync::CancellationToken;
 
 use super::{TitleError, generate_title};
 use crate::db::ai_titles::{self, TitleScope};
-use crate::drive::client::VideoQuery;
 use crate::error::AppError;
 use crate::library::video_summary::VideoFile;
 use crate::state::AppState;
 
 /// Two to three requests at a time stays well inside Gemini's rate limits.
 const CONCURRENCY: usize = 3;
-const DRIVE_PAGE_SIZE: u32 = 1000;
 
 pub const PROGRESS_EVENT: &str = "titles://progress";
 pub const ITEM_EVENT: &str = "titles://item";
@@ -209,38 +207,22 @@ fn record_failure(
     }
 }
 
-/// Lists every video in Drive and keeps those that need a title.
+/// Lists every video in the library and keeps those that need a title.
 async fn find_videos_needing_titles(
     state: &AppState,
     scope: TitleScope,
     cancel: &CancellationToken,
 ) -> Result<Vec<VideoFile>, AppError> {
-    let mut videos: Vec<VideoFile> = Vec::new();
-    let mut page_token: Option<String> = None;
-    loop {
-        if cancel.is_cancelled() {
-            return Ok(Vec::new());
-        }
-        let page = state
-            .drive
-            .list_videos(&VideoQuery {
-                page_token: page_token.take(),
-                page_size: DRIVE_PAGE_SIZE,
-                ..VideoQuery::default()
-            })
-            .await?;
-        let summaries = state.summarize(page.files).await?;
-        videos.extend(
-            summaries
-                .into_iter()
-                .filter(|summary| scope != TitleScope::All || summary.custom_title.is_none())
-                .map(|summary| summary.file),
-        );
-        match page.next_page_token {
-            Some(token) => page_token = Some(token),
-            None => break,
-        }
+    let listed = state.library_videos(None).await?;
+    if cancel.is_cancelled() {
+        return Ok(Vec::new());
     }
+    let videos: Vec<VideoFile> = state
+        .with_local_state(listed)?
+        .into_iter()
+        .filter(|summary| scope != TitleScope::All || summary.custom_title.is_none())
+        .map(|summary| summary.file)
+        .collect();
 
     let ids: Vec<String> = videos.iter().map(|video| video.id.clone()).collect();
     let records = state

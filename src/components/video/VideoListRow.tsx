@@ -4,8 +4,9 @@ import { Avatar } from '@/components/common/Avatar';
 import { IconButton } from '@/components/common/IconButton';
 import type { VideoSummary } from '@/lib/api';
 import { folderPath, watchPath } from '@/lib/paths';
-import { videoDetailsLine, videoMetaLine } from '@/lib/video-meta';
+import { relativeDateCreated, videoDetailsParts } from '@/lib/video-meta';
 
+import { MetadataParts } from './MetadataParts';
 import { Thumbnail } from './Thumbnail';
 import { VideoMenu } from './VideoMenu';
 
@@ -18,7 +19,6 @@ type VideoListRowProps = {
 /** Search-results and history row: large thumbnail on the left, details on the right. */
 export function VideoListRow({ video, onRemove }: VideoListRowProps) {
   const watchUrl = watchPath(video.id, { folderId: video.folderId });
-  const details = videoDetailsLine(video);
 
   return (
     <article className="group flex gap-4">
@@ -36,7 +36,7 @@ export function VideoListRow({ video, onRemove }: VideoListRowProps) {
             {video.title}
           </Link>
         </h3>
-        <p className="text-xs leading-[18px] text-text-secondary">{videoMetaLine(video)}</p>
+        <p className="text-xs leading-[18px] text-text-secondary">{relativeDateCreated(video)}</p>
         <Link
           to={video.folderId ? folderPath(video.folderId) : watchUrl}
           className="my-3 flex w-fit items-center gap-2 text-xs text-text-secondary hover:text-text"
@@ -45,7 +45,7 @@ export function VideoListRow({ video, onRemove }: VideoListRowProps) {
           {video.folderName}
         </Link>
         <p className="line-clamp-1 text-xs text-text-secondary">
-          {[video.fileName, details].filter(Boolean).join(' • ')}
+          <MetadataParts parts={[video.fileName, ...videoDetailsParts(video)]} />
         </p>
       </div>
       <div className="flex flex-col items-center">

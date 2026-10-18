@@ -1,6 +1,7 @@
-import { fireEvent, screen } from '@testing-library/react';
+import { act, fireEvent, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { bumpThumbnailVersion } from '@/lib/thumbnail-versions';
 import { makeVideo } from '@/test/fixtures';
 import { renderWithProviders } from '@/test/render';
 
@@ -35,11 +36,16 @@ describe('VideoCard', () => {
     expect(screen.getByRole('link', { name: 'Holidays' })).toHaveAttribute('href', '/folder/fold1');
   });
 
-  it('should show duration and relative date where YouTube shows views', () => {
+  it('should show the folder and the date on one metadata line, as YouTube does', () => {
     renderCard();
 
-    expect(screen.getByText('1:15 • 3 days ago')).toBeInTheDocument();
-    expect(screen.getByText('1:15')).toBeInTheDocument();
+    expect(screen.getByText('3 days ago')).toHaveTextContent('Holidays 3 days ago');
+  });
+
+  it('should show the duration only on the thumbnail badge', () => {
+    renderCard();
+
+    expect(screen.getAllByText('1:15')).toHaveLength(1);
   });
 
   it('should load the thumbnail from the thumb protocol', () => {
@@ -68,6 +74,20 @@ describe('VideoCard', () => {
 
     expect(container.querySelector('img')).toBeNull();
     expect(screen.getByText('movie')).toBeInTheDocument();
+  });
+
+  it('should load the new picture after the preview is regenerated, even after a failure', () => {
+    const { container } = renderCard(makeVideo({ id: 'regen1', hasThumbnail: false }));
+    const images = container.querySelectorAll('img');
+    fireEvent.error(images[images.length - 1]);
+    expect(container.querySelector('img')).toBeNull();
+
+    act(() => bumpThumbnailVersion('regen1'));
+
+    expect(container.querySelector('img')).toHaveAttribute(
+      'src',
+      'http://thumb.localhost/regen1?v=1',
+    );
   });
 
   it('should show the folder as plain text for files shared with me', () => {

@@ -31,7 +31,7 @@ if ((Test-Path $Target) -and -not $Force) {
 }
 
 # Download into a fresh, empty directory so nothing else is executed from the archive location.
-$WorkDir = Join-Path ([System.IO.Path]::GetTempPath()) ("drivetube-ffmpeg-" + [guid]::NewGuid())
+$WorkDir = Join-Path ([System.IO.Path]::GetTempPath()) ("homereel-ffmpeg-" + [guid]::NewGuid())
 New-Item -ItemType Directory -Path $WorkDir | Out-Null
 
 try {

@@ -9,15 +9,15 @@ pub const DRIVE_API_BASE: &str = "https://www.googleapis.com/drive/v3";
 pub const DRIVE_READONLY_SCOPE: &str = "https://www.googleapis.com/auth/drive.readonly";
 
 /// Service name for entries in Windows Credential Manager.
-pub const KEYRING_SERVICE: &str = "com.drivetube.desktop";
+pub const KEYRING_SERVICE: &str = "com.homereel.desktop";
 pub const GEMINI_KEY_NAME: &str = "gemini-api-key";
 
-pub const DATABASE_FILE: &str = "drivetube.sqlite3";
+pub const DATABASE_FILE: &str = "homereel.sqlite3";
 
 /// The OAuth client baked in at build time by `build.rs`, if one was provided.
 pub fn google_client() -> Option<OAuthClient> {
-    let client_id = option_env!("DRIVETUBE_GOOGLE_CLIENT_ID")?;
-    let client_secret = option_env!("DRIVETUBE_GOOGLE_CLIENT_SECRET")?;
+    let client_id = option_env!("HOMEREEL_GOOGLE_CLIENT_ID")?;
+    let client_secret = option_env!("HOMEREEL_GOOGLE_CLIENT_SECRET")?;
     Some(OAuthClient {
         client_id: client_id.to_owned(),
         client_secret: client_secret.to_owned(),

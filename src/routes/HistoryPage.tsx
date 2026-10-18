@@ -40,7 +40,7 @@ export function HistoryPage() {
         {history.isPending && <RowSkeletons className="mt-8" />}
         {history.isSuccess && !hasHistory && (
           <EmptyState icon="history" title="This list has no videos">
-            Videos you watch in DriveTube will show up here.
+            Videos you watch in Homereel will show up here.
           </EmptyState>
         )}
         {groupHistoryByDay(videos).map((group) => (
@@ -73,7 +73,7 @@ export function HistoryPage() {
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
         title="Clear watch history?"
-        description="Your DriveTube watch history and resume points will be cleared. Your videos in Google Drive are not affected."
+        description="Your Homereel watch history and resume points will be cleared. Your videos are not affected."
         confirmLabel="Clear watch history"
         onConfirm={() => clear.mutate()}
       />

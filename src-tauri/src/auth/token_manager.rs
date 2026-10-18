@@ -101,7 +101,7 @@ impl TokenManager {
             exchange_code(&self.http, client, &code, &pkce.verifier, &redirect_uri).await?;
         if !has_drive_scope(&tokens.scope) {
             return Err(AppError::Forbidden(
-                "DriveTube needs permission to view your Google Drive files. Connect again and allow it."
+                "Homereel needs permission to view your Google Drive files. Connect again and allow it."
                     .into(),
             ));
         }

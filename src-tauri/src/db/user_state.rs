@@ -8,10 +8,10 @@ use super::{as_params, placeholders, sql_now};
 /// Videos must be watched this far to count as watched, as on YouTube's red progress bar.
 const WATCHED_FRACTION: f64 = 0.9;
 /// Resume points shorter than this are not worth a Continue watching entry.
-const MIN_RESUME_MS: i64 = 5_000;
+pub const MIN_RESUME_MS: i64 = 5_000;
 const CONTINUE_WATCHING_LIMIT: u32 = 12;
 
-/// DriveTube's own data about one video, merged into `VideoSummary`.
+/// Homereel's own data about one video, merged into `VideoSummary`.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct LocalState {
     pub custom_title: Option<String>,

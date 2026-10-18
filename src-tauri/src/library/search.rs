@@ -1,5 +1,5 @@
 //! Search over titles and file names. Drive only matches the start of words in file names and
-//! knows nothing of edited or AI titles, so DriveTube lists every video and matches here.
+//! knows nothing of edited or AI titles, so Homereel lists every video and matches here.
 
 use super::video_summary::{TitleSource, VideoSummary};
 

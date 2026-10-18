@@ -25,8 +25,8 @@ describe('RelatedVideoItem', () => {
     vi.useRealTimers();
   });
 
-  describe('as a suggestion card', () => {
-    it('should show the title, folder and created date under the thumbnail', () => {
+  describe('as a suggestion row', () => {
+    it('should show the title, folder and created date beside the thumbnail', () => {
       renderWithProviders(
         <RelatedVideoItem
           video={makeVideo({ title: 'Friends dancing at a party', durationMs: 17_000 })}
@@ -36,8 +36,27 @@ describe('RelatedVideoItem', () => {
 
       expect(screen.getByRole('heading', { name: 'Friends dancing at a party' })).toBeVisible();
       expect(screen.getByText('Holidays')).toBeInTheDocument();
-      expect(screen.getByText('Up next • 0:17 • 3 days ago')).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          (_, element) => element?.tagName === 'P' && element.textContent === 'Up next 3 days ago',
+        ),
+      ).toBeInTheDocument();
       expect(screen.getByRole('link')).toHaveAttribute('href', '/watch?v=vid1&folder=fold1');
+    });
+
+    it('should offer the action menu next to the link, not inside it', () => {
+      renderWithProviders(<RelatedVideoItem video={makeVideo()} />);
+
+      const menu = screen.getByRole('button', { name: 'Action menu' });
+      expect(screen.getByRole('link')).not.toContainElement(menu);
+    });
+
+    it('should give the thumbnail exactly one width', () => {
+      const { container } = renderWithProviders(<RelatedVideoItem video={makeVideo()} />);
+
+      const thumbnail = container.querySelector('.aspect-video');
+      expect(thumbnail).not.toBeNull();
+      expect(widthClasses(thumbnail!)).toEqual(['w-[62.5%]']);
     });
   });
 

@@ -11,13 +11,13 @@ use crate::error::{AppError, AppResult};
 const MAX_REQUEST_BYTES: usize = 16 * 1024;
 const READ_TIMEOUT: Duration = Duration::from_secs(10);
 
-const SUCCESS_PAGE: &str = "<!doctype html><html><head><meta charset=\"utf-8\"><title>DriveTube</title></head>\
+const SUCCESS_PAGE: &str = "<!doctype html><html><head><meta charset=\"utf-8\"><title>Homereel</title></head>\
 <body style=\"background:#0f0f0f;color:#f1f1f1;font-family:Roboto,Arial,sans-serif;text-align:center;padding-top:20vh\">\
-<h1>DriveTube is connected</h1><p>You can close this tab and return to the app.</p></body></html>";
+<h1>Homereel is connected</h1><p>You can close this tab and return to the app.</p></body></html>";
 
-const FAILURE_PAGE: &str = "<!doctype html><html><head><meta charset=\"utf-8\"><title>DriveTube</title></head>\
+const FAILURE_PAGE: &str = "<!doctype html><html><head><meta charset=\"utf-8\"><title>Homereel</title></head>\
 <body style=\"background:#0f0f0f;color:#f1f1f1;font-family:Roboto,Arial,sans-serif;text-align:center;padding-top:20vh\">\
-<h1>DriveTube was not connected</h1><p>You can close this tab and try again from the app.</p></body></html>";
+<h1>Homereel was not connected</h1><p>You can close this tab and try again from the app.</p></body></html>";
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum CallbackOutcome {

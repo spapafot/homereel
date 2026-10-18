@@ -11,19 +11,30 @@ describe('local preferences', () => {
   });
 
   it('should read back a stored allowed value', () => {
-    writePreference('drivetube.sidebar', 'collapsed');
+    writePreference('homereel.sidebar', 'collapsed');
 
-    const value = readPreference('drivetube.sidebar', SIDEBAR_STATES, 'expanded');
+    const value = readPreference('homereel.sidebar', SIDEBAR_STATES, 'expanded');
 
     expect(value).toBe('collapsed');
   });
 
   it('should fall back when the stored value is not allowed', () => {
-    window.localStorage.setItem('drivetube.sidebar', 'sideways');
+    window.localStorage.setItem('homereel.sidebar', 'sideways');
 
-    const value = readPreference('drivetube.sidebar', SIDEBAR_STATES, 'expanded');
+    const value = readPreference('homereel.sidebar', SIDEBAR_STATES, 'expanded');
 
     expect(value).toBe('expanded');
+  });
+
+  it('should read a value saved under the DriveTube key until it is saved again', () => {
+    window.localStorage.setItem('drivetube.sidebar', 'collapsed');
+
+    const before = readPreference('homereel.sidebar', SIDEBAR_STATES, 'expanded');
+    writePreference('homereel.sidebar', 'expanded');
+
+    expect(before).toBe('collapsed');
+    expect(readPreference('homereel.sidebar', SIDEBAR_STATES, 'collapsed')).toBe('expanded');
+    expect(window.localStorage.getItem('drivetube.sidebar')).toBeNull();
   });
 
   it('should fall back instead of throwing when storage is unavailable', () => {
@@ -34,7 +45,7 @@ describe('local preferences', () => {
       throw new Error('blocked');
     });
 
-    expect(() => writePreference('drivetube.sidebar', 'collapsed')).not.toThrow();
-    expect(readPreference('drivetube.sidebar', SIDEBAR_STATES, 'expanded')).toBe('expanded');
+    expect(() => writePreference('homereel.sidebar', 'collapsed')).not.toThrow();
+    expect(readPreference('homereel.sidebar', SIDEBAR_STATES, 'expanded')).toBe('expanded');
   });
 });

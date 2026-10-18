@@ -3,8 +3,9 @@ import { Link } from 'react-router';
 import { Avatar } from '@/components/common/Avatar';
 import type { VideoSummary } from '@/lib/api';
 import { folderPath, watchPath } from '@/lib/paths';
-import { videoMetaLine } from '@/lib/video-meta';
+import { relativeDateCreated } from '@/lib/video-meta';
 
+import { MetadataParts } from './MetadataParts';
 import { Thumbnail } from './Thumbnail';
 import { VideoMenu } from './VideoMenu';
 
@@ -21,7 +22,7 @@ export function VideoCard({ video }: { video: VideoSummary }) {
       <Link to={watchUrl} tabIndex={-1} aria-hidden="true">
         <Thumbnail video={video} className="w-full rounded-xl" />
       </Link>
-      <div className="flex gap-3">
+      <div className="relative flex gap-2">
         {folderUrl ? (
           <Link to={folderUrl} tabIndex={-1} aria-hidden="true" className="h-9">
             {avatar}
@@ -30,7 +31,8 @@ export function VideoCard({ video }: { video: VideoSummary }) {
           avatar
         )}
         <div className="min-w-0 flex-1">
-          <h3 className="line-clamp-2 text-base leading-[22px] font-medium break-words">
+          {/* The padding keeps the title clear of the ⋮ button floating over its corner. */}
+          <h3 className="line-clamp-2 pr-6 text-base leading-[22px] font-medium break-words">
             <Link
               to={watchUrl}
               title={video.title}
@@ -39,21 +41,22 @@ export function VideoCard({ video }: { video: VideoSummary }) {
               {video.title}
             </Link>
           </h3>
-          <div className="mt-1 text-sm leading-5 text-text-secondary">
-            {folderUrl ? (
-              <Link to={folderUrl} className="hover:text-text">
-                {video.folderName}
-              </Link>
-            ) : (
-              <span>{video.folderName}</span>
-            )}
-            <p>{videoMetaLine(video)}</p>
-          </div>
+          <p className="mt-0.5 text-sm leading-5 text-text-secondary">
+            <MetadataParts
+              parts={[
+                folderUrl ? (
+                  <Link key="folder" to={folderUrl} className="hover:text-text">
+                    {video.folderName}
+                  </Link>
+                ) : (
+                  <span key="folder">{video.folderName}</span>
+                ),
+                relativeDateCreated(video),
+              ]}
+            />
+          </p>
         </div>
-        <VideoMenu
-          video={video}
-          className="-mt-2 -mr-2 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
-        />
+        <VideoMenu video={video} className="absolute -top-1.5 -right-2.5" />
       </div>
     </article>
   );
@@ -63,7 +66,7 @@ export function VideoCardSkeleton() {
   return (
     <div className="flex flex-col gap-3" aria-hidden="true">
       <div className="aspect-video w-full rounded-xl bg-skeleton" />
-      <div className="flex gap-3">
+      <div className="flex gap-2">
         <div className="size-9 shrink-0 rounded-full bg-skeleton" />
         <div className="flex flex-1 flex-col gap-2 pt-0.5">
           <div className="h-5 w-11/12 rounded bg-skeleton" />

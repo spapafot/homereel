@@ -5,6 +5,7 @@ use url::Url;
 
 use crate::drive::is_valid_drive_id;
 use crate::error::{AppError, AppResult};
+use crate::library::local_files::is_local_id;
 use crate::state::AppState;
 
 #[derive(Debug, Serialize)]
@@ -13,10 +14,13 @@ pub struct PlaybackSource {
     url: String,
 }
 
-/// A localhost media-proxy URL the `<video>` element can play and seek.
+/// A localhost media-proxy URL the `<video>` element can play and seek. The proxy finds local
+/// videos in the chosen folders itself.
 #[tauri::command]
 pub fn playback_source(state: State<'_, AppState>, drive_id: String) -> AppResult<PlaybackSource> {
-    if !state.known_files.contains(&drive_id) {
+    let is_playable = (is_local_id(&drive_id) && is_valid_drive_id(&drive_id))
+        || state.known_files.contains(&drive_id);
+    if !is_playable {
         return Err(AppError::NotFound);
     }
     Ok(PlaybackSource {
@@ -24,16 +28,27 @@ pub fn playback_source(state: State<'_, AppState>, drive_id: String) -> AppResul
     })
 }
 
-/// Opens the file's Drive page in the system browser, where the user's own Google session
-/// handles playback.
+/// Plays the video outside Homereel: a Drive file on its Drive page in the system browser,
+/// where the user's own Google session handles playback, and a local file in the default player.
 #[tauri::command]
-pub async fn playback_open_in_browser(
+pub async fn playback_open_external(
     app: AppHandle,
     state: State<'_, AppState>,
     drive_id: String,
 ) -> AppResult<()> {
     if !is_valid_drive_id(&drive_id) {
         return Err(AppError::NotFound);
+    }
+    if is_local_id(&drive_id) {
+        let video = state
+            .local
+            .find(&drive_id)
+            .await
+            .ok_or(AppError::NotFound)?;
+        return app
+            .opener()
+            .open_path(video.path.to_string_lossy(), None::<&str>)
+            .map_err(|error| AppError::internal(format!("Could not open the video: {error}")));
     }
     let email = state
         .account()
@@ -44,6 +59,26 @@ pub async fn playback_open_in_browser(
     app.opener()
         .open_url(url.as_str(), None::<&str>)
         .map_err(|error| AppError::internal(format!("Could not open the browser: {error}")))
+}
+
+/// Shows a video on this computer in File Explorer, selected in its folder.
+#[tauri::command]
+pub async fn video_show_in_folder(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    drive_id: String,
+) -> AppResult<()> {
+    if !is_local_id(&drive_id) {
+        return Err(AppError::NotFound);
+    }
+    let video = state
+        .local
+        .find(&drive_id)
+        .await
+        .ok_or(AppError::NotFound)?;
+    app.opener()
+        .reveal_item_in_dir(&video.path)
+        .map_err(|error| AppError::internal(format!("Could not open File Explorer: {error}")))
 }
 
 /// Microsoft's HEVC Video Extensions ($0.99). WebView2 decodes HEVC, which iPhones record in,

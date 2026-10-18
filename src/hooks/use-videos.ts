@@ -4,8 +4,11 @@ import { useEffect } from 'react';
 
 import {
   api,
+  MEDIA_INFO_EVENT,
   RECORDED_DATE_EVENT,
   RECORDED_DATES_DONE_EVENT,
+  type HomeMix,
+  type MediaInfoEvent,
   type RecordedDateEvent,
   type VideoListRequest,
   type VideoSummary,
@@ -14,10 +17,19 @@ import { pickNextVideo } from '@/lib/up-next';
 import { patchVideoInCaches } from '@/lib/video-cache';
 
 const FOLDERS_STALE_MS = 5 * 60_000;
+const SHORTS_ROW_ITEMS = 12;
 
 type FeedRequest = Omit<VideoListRequest, 'pageToken'>;
 
-/** Pages of videos from Drive, loaded as the user scrolls. */
+/**
+ * A mix stays as it was until Home reshuffles it: listing it again would move the videos just
+ * watched, as watching changes how often they come up.
+ */
+function mixOptions(mix: HomeMix | undefined) {
+  return mix ? { staleTime: Infinity } : {};
+}
+
+/** Pages of videos from the library, loaded as the user scrolls. */
 export function useVideoFeed(request: FeedRequest, options: { enabled?: boolean } = {}) {
   return useInfiniteQuery({
     queryKey: ['videos', request],
@@ -25,7 +37,33 @@ export function useVideoFeed(request: FeedRequest, options: { enabled?: boolean 
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.nextPageToken ?? undefined,
     enabled: options.enabled ?? true,
+    ...mixOptions(request.mix),
   });
+}
+
+/**
+ * Pages of Shorts, newest first or in Home's `mix`. Cached under `videos` so favorites and titles
+ * patch them like any feed.
+ */
+export function useShortsFeed(folderId: string | undefined, mix?: HomeMix) {
+  return useInfiniteQuery({
+    queryKey: ['videos', 'shorts', { folderId, mix }],
+    queryFn: ({ pageParam }) => api.shortsList({ folderId, mix, pageToken: pageParam }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextPageToken ?? undefined,
+    ...mixOptions(mix),
+  });
+}
+
+/**
+ * The Shorts the watch page's row suggests: the first ones from the folder (or all of Drive),
+ * without the playing video. The related list below leaves these out.
+ */
+export function useShortsRow(folderId: string | undefined, currentId: string): VideoSummary[] {
+  const feed = useShortsFeed(folderId);
+  return (feed.data?.pages[0]?.videos ?? [])
+    .filter((video) => video.id !== currentId)
+    .slice(0, SHORTS_ROW_ITEMS);
 }
 
 /**
@@ -77,7 +115,10 @@ export function useFolders() {
   });
 }
 
-/** Shows recording dates as the background scan reads them, without listing Drive again. */
+/**
+ * Shows recording dates, and the durations and sizes of local videos, as the background scan
+ * reads them, without listing the library again.
+ */
 export function useRecordedDateEvents() {
   const queryClient = useQueryClient();
 
@@ -85,6 +126,13 @@ export function useRecordedDateEvents() {
     const unlisteners = [
       listen<RecordedDateEvent>(RECORDED_DATE_EVENT, ({ payload }) =>
         patchVideoInCaches(queryClient, payload.driveId, { recordedDate: payload.recordedDate }),
+      ),
+      listen<MediaInfoEvent>(MEDIA_INFO_EVENT, ({ payload }) =>
+        patchVideoInCaches(queryClient, payload.driveId, {
+          durationMs: payload.durationMs,
+          width: payload.width,
+          height: payload.height,
+        }),
       ),
       // Feeds sorted while dates were missing re-sort the next time they are opened, rather
       // than reshuffling under the user.

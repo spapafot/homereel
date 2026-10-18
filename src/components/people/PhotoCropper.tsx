@@ -188,7 +188,7 @@ export function PhotoCropper({ src, onCancel, onCrop, cancelLabel = 'Cancel' }: 
               setSelection(initialSelection(size));
             }}
             onError={() =>
-              setError('DriveTube can’t open this image. Use a JPEG, PNG or WebP photo.')
+              setError('Homereel can’t open this image. Use a JPEG, PNG or WebP photo.')
             }
             className={natural ? 'absolute inset-0 size-full' : 'invisible max-h-[55vh] max-w-full'}
           />

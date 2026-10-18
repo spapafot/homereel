@@ -1,8 +1,9 @@
-//! Local SQLite store for what DriveTube adds on top of Drive: favorites, watch later,
+//! Local SQLite store for what Homereel adds on top of Drive: favorites, watch later,
 //! playlists, history and resume points, edited and AI-generated titles, people and pets for
-//! titles, recording dates read from the files, and settings.
+//! titles, recording dates and media details read from the files, and settings.
 
 pub mod ai_titles;
+pub mod media_info;
 pub mod people;
 pub mod playlists;
 pub mod recorded_dates;
@@ -24,6 +25,7 @@ fn migrations() -> Migrations<'static> {
         M::up(include_str!("../../migrations/001_init.sql")),
         M::up(include_str!("../../migrations/002_people.sql")),
         M::up(include_str!("../../migrations/003_recorded_dates.sql")),
+        M::up(include_str!("../../migrations/004_media_info.sql")),
     ])
 }
 
@@ -98,7 +100,7 @@ pub(crate) fn as_params(ids: &[String]) -> Vec<&dyn ToSql> {
 
 #[cfg(test)]
 pub mod test_support {
-    use crate::library::video_summary::VideoFile;
+    use crate::library::video_summary::{VideoFile, VideoSource};
 
     pub fn video(id: &str, name: &str) -> VideoFile {
         VideoFile {
@@ -115,6 +117,7 @@ pub mod test_support {
             folder_name: "Holidays".into(),
             has_thumbnail: true,
             md5_checksum: Some("md5".into()),
+            source: VideoSource::Drive,
         }
     }
 }
@@ -135,19 +138,19 @@ mod tests {
                     "SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name IN \
                      ('video_snapshots', 'user_video_state', 'playlists', 'playlist_items', \
                       'video_ai_titles', 'app_settings', 'people', 'person_photos', \
-                      'video_ai_people')",
+                      'video_ai_people', 'video_recorded_dates', 'video_media_info')",
                     [],
                     |row| row.get(0),
                 )
             })
             .unwrap();
-        assert_eq!(tables, 9);
+        assert_eq!(tables, 11);
     }
 
     #[test]
     fn opens_a_database_file_and_reopens_it() {
         let dir = tempfile::tempdir().unwrap();
-        let path = dir.path().join("nested").join("drivetube.sqlite3");
+        let path = dir.path().join("nested").join("homereel.sqlite3");
 
         drop(Database::open(&path).unwrap());
         let reopened = Database::open(&path);

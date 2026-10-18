@@ -1,11 +1,18 @@
-//! Library data served to the UI. Videos are read live from Drive; only DriveTube's own data is
-//! stored locally (see `db`), including each video's recording date once it has been read.
+//! Library data served to the UI. Videos are read live from Drive and from folders on this
+//! computer; only Homereel's own data is stored locally (see `db`), including each video's
+//! recording date once it has been read.
 
 pub mod date_order;
 pub mod date_scan;
+pub mod drive_tree;
 pub mod folder_names;
+pub mod home_mix;
+pub mod local_files;
 pub mod local_listings;
 pub mod search;
+pub mod shorts;
+pub mod sort_order;
+pub mod sources;
 pub mod video_summary;
 
 use std::collections::HashMap;
@@ -20,7 +27,7 @@ pub struct KnownFile {
     pub video: Option<VideoFile>,
 }
 
-/// Drive files DriveTube has listed this session. The media proxy only streams these, the
+/// Videos Homereel has listed this session. The media proxy only streams these from Drive, the
 /// thumbnail protocol reuses their `thumbnailLink`, and actions reuse their metadata.
 #[derive(Clone, Default)]
 pub struct KnownFiles(Arc<RwLock<HashMap<String, KnownFile>>>);

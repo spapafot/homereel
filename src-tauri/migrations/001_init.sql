@@ -1,4 +1,4 @@
--- DriveTube keeps only what it adds on top of Google Drive. Drive itself is read live and never
+-- Homereel keeps only what it adds on top of Google Drive. Drive itself is read live and never
 -- indexed. Timestamps are RFC 3339 UTC text.
 
 -- Display metadata for videos that have local state (favorites, playlists, history, titles), so

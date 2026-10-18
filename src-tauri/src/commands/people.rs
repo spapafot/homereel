@@ -17,8 +17,6 @@ const MAX_DESCRIPTION_CHARS: usize = 120;
 const MAX_PHOTO_BYTES: usize = 1_000_000;
 /// Wide enough to crop a face out of a group shot.
 const CAPTURE_WIDTH: u32 = 1280;
-/// How far before the end a frame is taken from a video that played to the end.
-const END_MARGIN_MS: u64 = 500;
 
 /// Everything the person dialog edits, saved at once.
 #[derive(Debug, Deserialize)]
@@ -135,26 +133,18 @@ pub async fn video_frame_capture(
     let ffmpeg = ffmpeg::locate_ffmpeg()
         .ok_or_else(|| AppError::internal(TitleError::FfmpegMissing.to_string()))?;
     let video = state.video_file(&drive_id).await?;
-    let url = state.media_proxy.media_url(&video.id);
+    let url = state.media_proxy.ffmpeg_input(&video.id).await?;
     let duration_ms = match video.duration_ms {
         Some(duration_ms) => Some(duration_ms),
         None => ffmpeg::probe_duration(&ffmpeg, &url)
             .await
             .map(|seconds| (seconds * 1000.0) as u64),
     };
-    let at_ms = capture_position(position_ms, duration_ms);
+    let at_ms = ffmpeg::capture_position(position_ms, duration_ms);
     let bytes = ffmpeg::extract_frame(&ffmpeg, &url, at_ms as f64 / 1000.0, CAPTURE_WIDTH)
         .await
         .map_err(AppError::internal)?;
     Ok(format!("data:image/jpeg;base64,{}", STANDARD.encode(bytes)))
-}
-
-/// ffmpeg finds no frame when asked for the very end, which is where a finished video stops.
-fn capture_position(position_ms: u64, duration_ms: Option<u64>) -> u64 {
-    match duration_ms {
-        Some(duration_ms) => position_ms.min(duration_ms.saturating_sub(END_MARGIN_MS)),
-        None => position_ms,
-    }
 }
 
 #[cfg(test)]
@@ -177,14 +167,6 @@ mod tests {
         bytes.resize(MAX_PHOTO_BYTES + 1, 0);
 
         assert!(decode_photo(&STANDARD.encode(bytes)).is_err());
-    }
-
-    #[test]
-    fn captures_a_little_before_the_end_of_a_finished_video() {
-        assert_eq!(capture_position(14_215, Some(14_233)), 13_733);
-        assert_eq!(capture_position(7_000, Some(14_233)), 7_000);
-        assert_eq!(capture_position(300, Some(400)), 0);
-        assert_eq!(capture_position(14_215, None), 14_215);
     }
 
     #[test]

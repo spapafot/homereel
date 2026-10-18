@@ -1,6 +1,6 @@
 /** App URLs, shaped like YouTube's where there is an equivalent. */
 
-/** YouTube's list IDs for Watch later and liked videos; DriveTube's Favorites play the liked role. */
+/** YouTube's list IDs for Watch later and liked videos; Homereel's Favorites play the liked role. */
 export const WATCH_LATER_LIST = 'WL';
 export const FAVORITES_LIST = 'LL';
 
@@ -15,6 +15,12 @@ export function watchPath(videoId: string, context: WatchContext = {}): string {
   if (context.list) params.set('list', context.list);
   else if (context.folderId) params.set('folder', context.folderId);
   return `/watch?${params.toString()}`;
+}
+
+/** A Short in the Shorts player; with a folder, scrolling stays within that folder's Shorts. */
+export function shortsPath(videoId: string, folderId?: string | null): string {
+  const path = `/shorts/${encodeURIComponent(videoId)}`;
+  return folderId ? `${path}?${new URLSearchParams({ folder: folderId }).toString()}` : path;
 }
 
 export function folderPath(folderId: string): string {

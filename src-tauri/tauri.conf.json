@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "DriveTube",
+  "productName": "Homereel",
   "version": "0.1.0",
-  "identifier": "com.drivetube.desktop",
+  "identifier": "com.homereel.desktop",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
@@ -14,7 +14,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "DriveTube",
+        "title": "Homereel",
         "width": 1280,
         "height": 800,
         "minWidth": 640,

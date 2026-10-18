@@ -4,8 +4,13 @@ import { toAppError } from '@/lib/app-error';
 
 import { Button } from './Button';
 
+type SignInButtonProps = {
+  compact?: boolean;
+  label?: string;
+};
+
 /** YouTube's outlined "Sign in" button; starts the Google sign-in in the system browser. */
-export function SignInButton({ compact = false }: { compact?: boolean }) {
+export function SignInButton({ compact = false, label = 'Sign in' }: SignInButtonProps) {
   const connect = useConnectDrive();
   const error = connect.error ? toAppError(connect.error) : null;
 
@@ -18,7 +23,7 @@ export function SignInButton({ compact = false }: { compact?: boolean }) {
           onClick={() => connect.mutate()}
           disabled={connect.isPending}
         >
-          {connect.isPending ? 'Waiting for browser…' : 'Sign in'}
+          {connect.isPending ? 'Waiting for browser…' : label}
         </Button>
         {connect.isPending && !compact && <Button onClick={() => api.authCancel()}>Cancel</Button>}
       </div>

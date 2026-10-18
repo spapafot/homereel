@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 use super::folder_names::SHARED_WITH_ME;
+use super::local_files::{self, LocalVideo};
+use crate::db::media_info::MediaInfoRecord;
 use crate::db::user_state::LocalState;
 use crate::drive::models::DriveFile;
 use crate::recorded_date;
@@ -10,8 +12,17 @@ use crate::recorded_date;
 /// Shown when a folder name could not be fetched (for example while offline).
 const UNKNOWN_FOLDER: &str = "Google Drive";
 
-/// Drive metadata of one video, as DriveTube displays it. Also the snapshot stored for videos
-/// with local state.
+/// Where a video's file is. Snapshots stored before folders on this computer existed are Drive's.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum VideoSource {
+    #[default]
+    Drive,
+    Local,
+}
+
+/// Metadata of one video in Drive or on this computer, as Homereel displays it. Also the
+/// snapshot stored for videos with local state.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VideoFile {
@@ -29,6 +40,8 @@ pub struct VideoFile {
     pub has_thumbnail: bool,
     #[serde(default)]
     pub md5_checksum: Option<String>,
+    #[serde(default)]
+    pub source: VideoSource,
 }
 
 impl VideoFile {
@@ -56,6 +69,29 @@ impl VideoFile {
             folder_name,
             has_thumbnail: file.has_thumbnail,
             md5_checksum: file.md5_checksum,
+            source: VideoSource::Drive,
+        }
+    }
+
+    /// `media_info` is what ffmpeg has read from the file so far, if anything.
+    pub fn from_local(video: LocalVideo, media_info: Option<&MediaInfoRecord>) -> Self {
+        Self {
+            duration_ms: media_info.and_then(|info| info.duration_ms),
+            width: media_info.and_then(|info| info.width),
+            height: media_info.and_then(|info| info.height),
+            id: video.id,
+            file_name: video.file_name,
+            mime_type: video.mime_type.to_owned(),
+            size_bytes: Some(video.size_bytes),
+            modified_time: video.modified.and_then(local_files::rfc3339),
+            // "Date uploaded" of a file on this computer is when it arrived there.
+            created_time: video.created.and_then(local_files::rfc3339),
+            folder_id: Some(video.folder_id),
+            folder_name: video.folder_name,
+            // Every local video gets a frame as its thumbnail.
+            has_thumbnail: true,
+            md5_checksum: None,
+            source: VideoSource::Local,
         }
     }
 }
@@ -68,7 +104,7 @@ pub enum TitleSource {
     FileName,
 }
 
-/// A video with DriveTube's local state, as cards, rows and the watch page show it.
+/// A video with Homereel's local state, as cards, rows and the watch page show it.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VideoSummary {
@@ -191,6 +227,49 @@ mod tests {
         let video = VideoFile::from_drive(drive_file(&["fold9"]), &HashMap::new());
 
         assert_eq!(video.folder_name, UNKNOWN_FOLDER);
+    }
+
+    #[test]
+    fn local_videos_take_their_size_and_duration_from_the_media_info() {
+        let video = LocalVideo {
+            id: "local-1".into(),
+            path: r"C:\Videos\Trip\IMG_1.MOV".into(),
+            file_name: "IMG_1.MOV".into(),
+            mime_type: "video/quicktime",
+            size_bytes: 2_000,
+            modified: Some(std::time::UNIX_EPOCH + std::time::Duration::from_secs(1_718_216_095)),
+            created: None,
+            folder_id: "localdir-1".into(),
+            folder_name: "Trip".into(),
+        };
+        let info = MediaInfoRecord {
+            duration_ms: Some(15_000),
+            width: Some(1080),
+            height: Some(1920),
+        };
+
+        let file = VideoFile::from_local(video.clone(), Some(&info));
+        let unread = VideoFile::from_local(video, None);
+
+        assert_eq!(file.source, VideoSource::Local);
+        assert_eq!((file.width, file.height), (Some(1080), Some(1920)));
+        assert_eq!(
+            file.modified_time.as_deref(),
+            Some("2024-06-12T18:14:55.000Z")
+        );
+        assert_eq!(file.folder_id.as_deref(), Some("localdir-1"));
+        assert_eq!(unread.duration_ms, None);
+        assert_eq!(serde_json::to_value(&file).unwrap()["source"], "local");
+    }
+
+    #[test]
+    fn snapshots_without_a_source_are_from_drive() {
+        let mut json = serde_json::to_value(crate::db::test_support::video("a", "a.mp4")).unwrap();
+        json.as_object_mut().unwrap().remove("source");
+
+        let file: VideoFile = serde_json::from_value(json).unwrap();
+
+        assert_eq!(file.source, VideoSource::Drive);
     }
 
     #[test]

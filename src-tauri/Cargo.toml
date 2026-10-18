@@ -1,15 +1,15 @@
 [package]
-name = "drivetube"
+name = "homereel"
 version = "0.1.0"
-description = "A personal YouTube-style library for videos stored in Google Drive"
-authors = ["spapafot"]
-license = ""
-repository = ""
+description = "A YouTube-style library for your own videos, in Google Drive or on this computer"
+authors = ["Stratos Papafotiou"]
+license = "MIT"
+repository = "https://github.com/spapafot/homereel"
 edition = "2024"
 rust-version = "1.90"
 
 [lib]
-name = "drivetube_lib"
+name = "homereel_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
@@ -18,6 +18,7 @@ serde_json = "1.0"
 
 [dependencies]
 tauri = { version = "2.12.4", features = [] }
+tauri-plugin-dialog = "2.8.3"
 tauri-plugin-log = "2.10.1"
 tauri-plugin-opener = "2.7.2"
 tauri-plugin-single-instance = "2.5.4"
@@ -38,7 +39,7 @@ reqwest = { version = "0.13.5", default-features = false, features = [
   "query",
 ] }
 tokio = { version = "1.53", features = ["rt-multi-thread", "macros", "net", "sync", "time", "io-util", "fs", "process"] }
-tokio-util = "0.7.20"
+tokio-util = { version = "0.7.20", features = ["io"] }
 axum = { version = "0.8.9", default-features = false, features = ["http1", "tokio"] }
 futures-util = "0.3"
 sha2 = "0.11"
@@ -48,9 +49,13 @@ url = "2.5"
 keyring-core = "1.0.1"
 rusqlite = { version = "0.40.2", features = ["bundled"] }
 rusqlite_migration = "2.6.0"
+# The same folders Tauri resolves app paths from; used before Tauri starts.
+dirs = "7.0"
 
 [target.'cfg(windows)'.dependencies]
 windows-native-keyring-store = { version = "1.1.0", default-features = false }
+# Tauri's dialog plugin uses the same; this one shows a message before Tauri starts.
+rfd = { version = "0.16", default-features = false, features = ["common-controls-v6"] }
 
 [dev-dependencies]
 wiremock = "0.6.5"

@@ -25,10 +25,10 @@ export function TitlesSettings() {
   return (
     <div className="flex flex-col gap-6">
       <p className="text-sm leading-5 text-text-secondary">
-        DriveTube can name each video once with Gemini, from five small frames and the file’s
-        details (about $0.002 per video). Titles are stored only in DriveTube; files in Google Drive
-        are never renamed. Use a key from a project with billing enabled: on Gemini’s free tier,
-        Google may use the frames to improve its products.
+        Homereel can name each video once with Gemini, from five small frames and the file’s
+        details (about $0.002 per video). Titles are stored only in Homereel; your files are never
+        renamed. Use a key from a project with billing enabled: on Gemini’s free tier, Google may
+        use the frames to improve its products.
       </p>
       <ApiKeyField keyConfigured={keyConfigured} />
       {keyConfigured && gemini.data && <ModelField model={gemini.data.model} />}

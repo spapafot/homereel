@@ -61,6 +61,14 @@ impl FolderNames {
             .collect()
     }
 
+    /// Adds names already known, such as those of the chosen folder's tree.
+    pub async fn insert(&self, names: &HashMap<String, String>) {
+        let mut known = self.names.lock().await;
+        for (id, name) in names {
+            known.insert(id.clone(), name.clone());
+        }
+    }
+
     pub async fn clear(&self) {
         self.names.lock().await.clear();
     }

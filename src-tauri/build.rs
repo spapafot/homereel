@@ -1,8 +1,8 @@
 use std::path::Path;
 
 const CLIENT_FILE: &str = "google-oauth-client.json";
-const ID_KEY: &str = "DRIVETUBE_GOOGLE_CLIENT_ID";
-const SECRET_KEY: &str = "DRIVETUBE_GOOGLE_CLIENT_SECRET";
+const ID_KEY: &str = "HOMEREEL_GOOGLE_CLIENT_ID";
+const SECRET_KEY: &str = "HOMEREEL_GOOGLE_CLIENT_SECRET";
 
 fn main() {
     embed_google_client_credentials();

@@ -124,7 +124,7 @@ function UserPlaylist({ playlistId }: { playlistId: number }) {
         open={dialog === 'delete'}
         onOpenChange={(open) => setDialog(open ? 'delete' : null)}
         title={`Delete ${name}?`}
-        description="The playlist is removed from DriveTube. The videos stay in your Google Drive."
+        description="The playlist is removed from Homereel. The videos stay in your Google Drive."
         confirmLabel="Delete"
         onConfirm={() =>
           remove.mutate({ playlistId, name }, { onSuccess: () => navigate('/playlists') })

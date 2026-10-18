@@ -11,6 +11,9 @@ export type AuthStatus = {
 
 export type TitleSource = 'custom' | 'ai' | 'fileName';
 
+/** Where a video's file is: in Google Drive, or in a folder on this computer. */
+export type VideoSource = 'drive' | 'local';
+
 export type VideoSummary = {
   id: string;
   /** Display title: the user's edit, else the AI title, else the filename. */
@@ -25,9 +28,9 @@ export type VideoSummary = {
   width: number | null;
   height: number | null;
   sizeBytes: number | null;
-  /** Drive's "Modified": for an upload, usually the file's date on the device it came from. */
+  /** The file's "Modified" date: for an upload, usually its date on the device it came from. */
   modifiedTime: string | null;
-  /** When the file was uploaded to Drive, shown as "Date uploaded". */
+  /** When the file was uploaded to Drive or added to this computer, shown as "Date uploaded". */
   createdTime: string | null;
   /** The day the video was recorded, `YYYY-MM-DD`, from its file name or metadata. */
   recordedDate: string | null;
@@ -35,6 +38,7 @@ export type VideoSummary = {
   folderName: string;
   hasThumbnail: boolean;
   md5Checksum: string | null;
+  source: VideoSource;
   isFavorite: boolean;
   isWatchLater: boolean;
   lastPositionMs: number | null;
@@ -46,10 +50,18 @@ export type VideoSummary = {
 export type VideoOrder =
   'createdNewest' | 'createdOldest' | 'uploadedNewest' | 'uploadedOldest' | 'name';
 
+/**
+ * Home's shuffle: the same seed always gives the same order. `today` is the local `YYYY-MM-DD`,
+ * which only the UI knows, for the On this day shelf.
+ */
+export type HomeMix = { seed: number; today: string };
+
 export type VideoListRequest = {
   search?: string;
   folderId?: string;
   order?: VideoOrder;
+  /** Lists Home's mix in place of `order`. */
+  mix?: HomeMix;
   pageToken?: string;
   pageSize?: number;
 };
@@ -57,6 +69,16 @@ export type VideoListRequest = {
 export type VideoPage = {
   videos: VideoSummary[];
   nextPageToken: string | null;
+  /** On the first page of a mix: videos recorded on this day in earlier years, newest first. */
+  onThisDay?: VideoSummary[];
+};
+
+/** Shorts are vertical or square videos up to 3 minutes, newest recorded first or mixed. */
+export type ShortsListRequest = {
+  folderId?: string;
+  mix?: HomeMix;
+  pageToken?: string;
+  pageSize?: number;
 };
 
 export type LibraryList = 'favorites' | 'watchLater' | 'history' | 'continueWatching';
@@ -65,6 +87,23 @@ export type FolderSummary = {
   id: string;
   name: string;
   videoCount: number;
+  source: VideoSource;
+};
+
+export type DriveFolder = { id: string; name: string };
+
+export type LocalFolder = {
+  path: string;
+  name: string;
+  /** False while the folder is missing, for example on an unplugged drive. */
+  available: boolean;
+};
+
+/** Where the library's videos come from. */
+export type LibrarySources = {
+  /** The Drive folder the library is limited to; `null` for all of Drive. */
+  driveFolder: DriveFolder | null;
+  localFolders: LocalFolder[];
 };
 
 export type PlaylistSummary = {
@@ -161,6 +200,16 @@ export type RecordedDateEvent = {
 export const RECORDED_DATE_EVENT = 'recorded-dates://item';
 export const RECORDED_DATES_DONE_EVENT = 'recorded-dates://done';
 
+/** Sent as the background scan reads the duration and size of each video on this computer. */
+export type MediaInfoEvent = {
+  driveId: string;
+  durationMs: number | null;
+  width: number | null;
+  height: number | null;
+};
+
+export const MEDIA_INFO_EVENT = 'media-info://item';
+
 export const api = {
   authStatus: () => invoke<AuthStatus>('auth_status'),
   authConnect: () => invoke<AuthStatus>('auth_connect'),
@@ -168,14 +217,28 @@ export const api = {
   authDisconnect: () => invoke<AuthStatus>('auth_disconnect'),
 
   videosList: (request: VideoListRequest) => invoke<VideoPage>('videos_list', { request }),
+  shortsList: (request: ShortsListRequest) => invoke<VideoPage>('shorts_list', { request }),
   videoGet: (driveId: string) => invoke<VideoSummary>('video_get', { driveId }),
   /** The whole list, or one page of it. */
   libraryList: (list: LibraryList, page?: { offset: number; limit: number }) =>
     invoke<VideoSummary[]>('library_list', { list, ...page }),
   foldersList: () => invoke<FolderSummary[]>('folders_list'),
 
+  librarySources: () => invoke<LibrarySources>('library_sources_get'),
+  /** Opens the system folder picker; resolves unchanged when the user cancels. */
+  libraryLocalFolderAdd: () => invoke<LibrarySources>('library_local_folder_add'),
+  libraryLocalFolderRemove: (path: string) =>
+    invoke<LibrarySources>('library_local_folder_remove', { path }),
+  libraryDriveFolderSet: (folder: DriveFolder | null) =>
+    invoke<LibrarySources>('library_drive_folder_set', { folder }),
+  /** Folders inside a Drive folder, or at the top of My Drive without `parentId`. */
+  driveFoldersList: (parentId?: string) =>
+    invoke<DriveFolder[]>('drive_folders_list', { parentId }),
+
   playbackSource: (driveId: string) => invoke<PlaybackSource>('playback_source', { driveId }),
-  playbackOpenInBrowser: (driveId: string) => invoke<void>('playback_open_in_browser', { driveId }),
+  /** Plays a Drive video on its Drive page, or a local one in the default player. */
+  playbackOpenExternal: (driveId: string) => invoke<void>('playback_open_external', { driveId }),
+  videoShowInFolder: (driveId: string) => invoke<void>('video_show_in_folder', { driveId }),
   playbackOpenHevcStore: () => invoke<void>('playback_open_hevc_store'),
 
   setFavorite: (driveId: string, value: boolean) =>
@@ -224,6 +287,13 @@ export const api = {
   /** One frame as a JPEG data URL. */
   videoFrameCapture: (driveId: string, positionMs: number) =>
     invoke<string>('video_frame_capture', { driveId, positionMs: Math.round(positionMs) }),
+
+  /** A new thumbnail from the frame at `positionMs`, or else the most detailed of several. */
+  thumbnailRegenerate: (driveId: string, positionMs?: number) =>
+    invoke<void>('thumbnail_regenerate', {
+      driveId,
+      positionMs: positionMs == null ? null : Math.round(positionMs),
+    }),
 };
 
 /** URL of a person's photo served from SQLite by the Rust `personphoto` protocol. */
@@ -231,7 +301,11 @@ export function personPhotoUrl(photoId: number): string {
   return convertFileSrc(String(photoId), 'personphoto');
 }
 
-/** URL of the cached Drive thumbnail served by the Rust `thumb` protocol. */
-export function thumbnailUrl(driveId: string): string {
-  return convertFileSrc(driveId, 'thumb');
+/**
+ * URL of the cached thumbnail served by the Rust `thumb` protocol. A new `version` after a
+ * regenerate makes the webview load the new picture; Rust ignores it.
+ */
+export function thumbnailUrl(driveId: string, version = 0): string {
+  const url = convertFileSrc(driveId, 'thumb');
+  return version > 0 ? `${url}?v=${version}` : url;
 }

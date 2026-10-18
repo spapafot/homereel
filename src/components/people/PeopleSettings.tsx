@@ -79,7 +79,7 @@ export function PeopleSettings() {
         open={pendingDelete != null}
         onOpenChange={(open) => !open && setPendingDelete(null)}
         title={pendingDelete ? `Remove ${pendingDelete.name}?` : 'Remove'}
-        description="Their photos are deleted from DriveTube. Titles that already use their name stay as they are."
+        description="Their photos are deleted from Homereel. Titles that already use their name stay as they are."
         confirmLabel="Remove"
         onConfirm={() => pendingDelete && deletePerson.mutate(pendingDelete)}
       />

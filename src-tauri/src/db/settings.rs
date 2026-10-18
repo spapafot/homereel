@@ -3,6 +3,9 @@ use rusqlite::{Connection, OptionalExtension, params};
 pub const GEMINI_MODEL: &str = "gemini_model";
 /// The owner's notes that every title request includes.
 pub const GEMINI_INSTRUCTIONS: &str = "gemini_instructions";
+/// The library's sources; see `library::sources`.
+pub const DRIVE_FOLDER: &str = "drive_folder";
+pub const LOCAL_FOLDERS: &str = "local_folders";
 
 pub fn get(connection: &Connection, key: &str) -> rusqlite::Result<Option<String>> {
     connection
@@ -20,6 +23,11 @@ pub fn set(connection: &Connection, key: &str, value: &str) -> rusqlite::Result<
          ON CONFLICT(key) DO UPDATE SET value = excluded.value",
         params![key, value],
     )?;
+    Ok(())
+}
+
+pub fn remove(connection: &Connection, key: &str) -> rusqlite::Result<()> {
+    connection.execute("DELETE FROM app_settings WHERE key = ?1", params![key])?;
     Ok(())
 }
 

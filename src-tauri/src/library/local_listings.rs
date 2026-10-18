@@ -1,4 +1,4 @@
-//! Lists DriveTube orders or filters itself (date created, search). Drive cannot page through
+//! Lists Homereel orders or filters itself (date created, search). Drive cannot page through
 //! these, so the first page lists every match and later pages come from that listing.
 
 use std::collections::VecDeque;
