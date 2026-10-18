@@ -5,6 +5,43 @@ Google Drive™ (all of it, or one folder and its subfolders), in folders on thi
 in **Settings → Video library**. Files are only read, never changed. Favorites, Watch later,
 playlists, history and AI titles are stored on this computer only.
 
+## Features
+
+- One video library for Google Drive and local folders.
+- Familiar browsing with thumbnails, folder filters, search and a Shorts feed.
+- Favorites, Watch later, playlists and watch history with resume points.
+- Optional Gemini titles with custom instructions and people and pet recognition.
+- Light, dark and system themes.
+
+## Screenshots
+
+These screenshots use blurred media and generic sample titles, names and descriptions.
+
+**Home and Shorts**
+
+![Home library with folder filters, video cards and a Shorts shelf](docs/screenshots/home.png)
+
+<details>
+<summary>Playback, favorites and AI settings</summary>
+
+**Video player**
+
+![Video player with related videos, saved collections and file details](docs/screenshots/watch.png)
+
+**Favorites**
+
+![Favorites collection with a Play all button and saved videos](docs/screenshots/favorites.png)
+
+**AI titles**
+
+![Gemini title settings with model selection and generic example instructions](docs/screenshots/ai-titles.png)
+
+**People and pets**
+
+![People and pets settings with blurred avatars and generic sample profiles](docs/screenshots/people.png)
+
+</details>
+
 ## First-time setup
 
 1. Install the toolchain (Node, Rust, Visual Studio Build Tools) and fetch ffmpeg. See
@@ -46,13 +83,8 @@ from `.env` (see [docs/setup.md](docs/setup.md#gemini-api-key-ai-titles)).
    `src-tauri/target/release/bundle/nsis/Homereel_<version>_x64-setup.exe` and the bare app
    `src-tauri/target/release/homereel.exe` (with `ffmpeg.exe` next to it).
 
-4. Run the setup file. It installs for your Windows user and needs no admin rights. If Windows
-   shows "Windows protected your PC", choose **More info → Run anyway** (the installer is not
-   code-signed).
+4. Run the setup file. It installs for your Windows user.
 5. Start **Homereel** from the Start menu.
-
-Installing a new version keeps your data. The Google sign-in and Gemini key stay in Windows
-Credential Manager, so you don't need to sign in again.
 
 | What                                  | Where                                                                 |
 | ------------------------------------- | --------------------------------------------------------------------- |
@@ -61,12 +93,6 @@ Credential Manager, so you don't need to sign in again.
 | Google sign-in, Gemini key            | Windows Credential Manager, entries ending in `.com.homereel.desktop` |
 
 To back up your library, copy the `.sqlite3` file while Homereel is closed.
-
-### Coming from DriveTube
-
-Homereel was called DriveTube in version 0.1.0. On its first start, Homereel moves DriveTube's
-library, thumbnails, Google sign-in and Gemini key to its own names, so nothing is lost. Close
-DriveTube first: while it is open, its files can't be moved, and Homereel says so and quits.
 
 ## Commands
 

@@ -1716,13 +1716,11 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "base64 0.23.1",
- "dirs",
  "futures-util",
  "getrandom 0.4.3",
  "keyring-core",
  "log",
  "reqwest",
- "rfd",
  "rusqlite",
  "rusqlite_migration",
  "serde",

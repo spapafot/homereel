@@ -2,14 +2,13 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
-use crate::auth::token_manager::{REFRESH_TOKEN_KEY, TokenManager};
+use crate::auth::token_manager::TokenManager;
 use crate::auth::token_store::{KeyringSecretStore, SecretStore, init_platform_store};
 use crate::config::{self, DATABASE_FILE, DRIVE_API_BASE, GEMINI_KEY_NAME, KEYRING_SERVICE};
 use crate::db::{Database, media_info, recorded_dates, settings, snapshots, user_state};
 use crate::drive::client::DriveClient;
 use crate::drive::models::{DriveFile, DriveUser};
 use crate::error::{AppError, AppResult};
-use crate::former_name;
 use crate::library::KnownFiles;
 use crate::library::date_scan::DateScan;
 use crate::library::drive_tree::DriveTreeCache;
@@ -58,13 +57,6 @@ impl AppState {
             .http1_only()
             .build()?;
         let secrets: Arc<dyn SecretStore> = Arc::new(KeyringSecretStore::new(KEYRING_SERVICE));
-        if let Err(error) = former_name::move_secrets(
-            &KeyringSecretStore::new(former_name::FORMER_KEYRING_SERVICE),
-            secrets.as_ref(),
-            &[REFRESH_TOKEN_KEY, GEMINI_KEY_NAME],
-        ) {
-            log::warn!("Could not move the Google sign-in and Gemini key from DriveTube: {error}");
-        }
         let tokens = Arc::new(TokenManager::new(
             http.clone(),
             config::google_client(),

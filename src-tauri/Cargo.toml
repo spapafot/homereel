@@ -49,13 +49,9 @@ url = "2.5"
 keyring-core = "1.0.1"
 rusqlite = { version = "0.40.2", features = ["bundled"] }
 rusqlite_migration = "2.6.0"
-# The same folders Tauri resolves app paths from; used before Tauri starts.
-dirs = "7.0"
 
 [target.'cfg(windows)'.dependencies]
 windows-native-keyring-store = { version = "1.1.0", default-features = false }
-# Tauri's dialog plugin uses the same; this one shows a message before Tauri starts.
-rfd = { version = "0.16", default-features = false, features = ["common-controls-v6"] }
 
 [dev-dependencies]
 wiremock = "0.6.5"

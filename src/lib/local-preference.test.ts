@@ -26,17 +26,6 @@ describe('local preferences', () => {
     expect(value).toBe('expanded');
   });
 
-  it('should read a value saved under the DriveTube key until it is saved again', () => {
-    window.localStorage.setItem('drivetube.sidebar', 'collapsed');
-
-    const before = readPreference('homereel.sidebar', SIDEBAR_STATES, 'expanded');
-    writePreference('homereel.sidebar', 'expanded');
-
-    expect(before).toBe('collapsed');
-    expect(readPreference('homereel.sidebar', SIDEBAR_STATES, 'collapsed')).toBe('expanded');
-    expect(window.localStorage.getItem('drivetube.sidebar')).toBeNull();
-  });
-
   it('should fall back instead of throwing when storage is unavailable', () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('blocked');

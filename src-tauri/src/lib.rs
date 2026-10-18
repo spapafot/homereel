@@ -5,7 +5,6 @@ mod db;
 mod drive;
 mod error;
 mod ffmpeg;
-mod former_name;
 mod library;
 mod protocol;
 mod recorded_date;
@@ -19,14 +18,6 @@ use crate::state::AppState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let context = tauri::generate_context!();
-    if let Err(error) = former_name::move_data(&context.config().identifier, config::DATABASE_FILE)
-    {
-        // Starting anyway would create an empty library and strand the old one.
-        former_name::report_move_failure(&error);
-        std::process::exit(1);
-    }
-
     let log_level = if cfg!(debug_assertions) {
         log::LevelFilter::Info
     } else {
@@ -136,6 +127,6 @@ pub fn run() {
             commands::people::video_frame_capture,
             commands::thumbnails::thumbnail_regenerate,
         ])
-        .run(context)
+        .run(tauri::generate_context!())
         .expect("error while running Homereel");
 }
