@@ -6,9 +6,8 @@ pub type AppResult<T> = Result<T, AppError>;
 /// never contain tokens, API keys, or request URLs with credentials.
 #[derive(Debug, thiserror::Error)]
 pub enum AppError {
-    #[error(
-        "The Google OAuth client is not configured. Add src-tauri/google-oauth-client.json and rebuild."
-    )]
+    /// The build has no Google OAuth client (see `build.rs`), so users can't connect Drive.
+    #[error("Drive connect is not available. Contact Homereel.")]
     NotConfigured,
     #[error("Google Drive is not connected.")]
     NotConnected,

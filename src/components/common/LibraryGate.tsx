@@ -6,7 +6,7 @@ import { useLibrarySources } from '@/hooks/use-library-sources';
 import { AddFolderButton } from './AddFolderButton';
 import { EmptyState } from './EmptyState';
 import { ErrorState } from './ErrorState';
-import { SignInButton } from './SignInButton';
+import { DRIVE_UNAVAILABLE_MESSAGE, SignInButton } from './SignInButton';
 
 /**
  * Renders its children once the library has somewhere to list videos from: Google Drive or a
@@ -29,9 +29,12 @@ export function LibraryGate({ children }: { children: ReactNode }) {
       icon="video_library"
       title="Add your videos"
       action={
-        <div className="flex flex-wrap items-start justify-center gap-3">
-          <AddFolderButton variant="outline" />
-          {canSignIn && <SignInButton label="Sign in with Google" />}
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex flex-wrap items-start justify-center gap-3">
+            <AddFolderButton variant="outline" />
+            {canSignIn && <SignInButton label="Sign in with Google" />}
+          </div>
+          {!canSignIn && <p className="text-sm text-text-secondary">{DRIVE_UNAVAILABLE_MESSAGE}</p>}
         </div>
       }
     >

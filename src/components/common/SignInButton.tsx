@@ -4,6 +4,9 @@ import { toAppError } from '@/lib/app-error';
 
 import { Button } from './Button';
 
+/** Shown where sign-in would be, in builds made without a Google OAuth client. */
+export const DRIVE_UNAVAILABLE_MESSAGE = 'Drive connect is not available. Contact Homereel.';
+
 type SignInButtonProps = {
   compact?: boolean;
   label?: string;

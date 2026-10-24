@@ -5,7 +5,7 @@ import { Avatar } from '@/components/common/Avatar';
 import { Button } from '@/components/common/Button';
 import { Icon } from '@/components/common/Icon';
 import { IconButton } from '@/components/common/IconButton';
-import { SignInButton } from '@/components/common/SignInButton';
+import { DRIVE_UNAVAILABLE_MESSAGE, SignInButton } from '@/components/common/SignInButton';
 import { useAuthStatus, useDisconnectDrive } from '@/hooks/use-auth';
 import { useLibrarySources, useRemoveLocalFolder } from '@/hooks/use-library-sources';
 
@@ -34,14 +34,13 @@ function DriveSource() {
   const sources = useLibrarySources();
   const [isPickerOpen, setIsPickerOpen] = useState(false);
 
-  if (!auth.data?.configured) {
+  // Waiting for the status keeps builds that can sign in from flashing the unavailable message.
+  if (!auth.data) return null;
+  if (!auth.data.configured) {
     return (
       <div>
         <SourceHeading>Google Drive</SourceHeading>
-        <p className="text-sm text-text-secondary">
-          To watch videos from Google Drive, add <code>src-tauri/google-oauth-client.json</code> as
-          described in <code>docs/setup.md</code>, then rebuild Homereel.
-        </p>
+        <p className="text-sm text-text-secondary">{DRIVE_UNAVAILABLE_MESSAGE}</p>
       </div>
     );
   }
