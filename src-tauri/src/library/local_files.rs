@@ -413,8 +413,21 @@ mod tests {
             folder_id(Path::new(r"C:\Videos\Trip")),
             folder_id(Path::new("c:/videos/TRIP"))
         );
+    }
+
+    /// Backslashes and drive letters only separate path components on Windows.
+    #[cfg(windows)]
+    #[test]
+    fn folder_names_of_drive_roots_drop_the_backslash() {
         assert_eq!(folder_display_name(Path::new(r"D:\")), "D:");
         assert_eq!(folder_display_name(Path::new(r"D:\Clips")), "Clips");
+    }
+
+    #[cfg(not(windows))]
+    #[test]
+    fn folder_names_are_the_last_path_component() {
+        assert_eq!(folder_display_name(Path::new("/Volumes/Clips")), "Clips");
+        assert_eq!(folder_display_name(Path::new("/Volumes/Clips/")), "Clips");
     }
 
     #[test]

@@ -16,6 +16,7 @@ import {
 } from '@/hooks/use-titles';
 import { MAX_GEMINI_INSTRUCTIONS, type TitleQueueStatus } from '@/lib/api';
 import { toAppError } from '@/lib/app-error';
+import { SECRET_STORE_NAME } from '@/lib/platform';
 
 /** Gemini key and model, and the background job that titles every video once. */
 export function TitlesSettings() {
@@ -48,7 +49,7 @@ function ApiKeyField({ keyConfigured }: { keyConfigured: boolean }) {
     return (
       <div className="flex flex-wrap items-center gap-3">
         <Icon name="key" className="text-text-secondary" />
-        <p className="flex-1 text-sm">Gemini API key saved in Windows Credential Manager</p>
+        <p className="flex-1 text-sm">Gemini API key saved in {SECRET_STORE_NAME}</p>
         <Button onClick={() => setEditing(true)}>Replace</Button>
         <Button onClick={() => removeKey.mutate()} disabled={removeKey.isPending}>
           Remove

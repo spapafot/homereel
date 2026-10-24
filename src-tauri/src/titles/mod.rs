@@ -30,7 +30,9 @@ pub enum TitleError {
     Gemini(#[from] GeminiError),
     #[error("No frames could be read from this video.")]
     NoFrames,
-    #[error("The ffmpeg sidecar is missing. Reinstall Homereel or run scripts/fetch-ffmpeg.ps1.")]
+    #[error(
+        "The ffmpeg sidecar is missing. Reinstall Homereel or run scripts/fetch-ffmpeg.ps1 or .sh."
+    )]
     FfmpegMissing,
     #[error("Gemini returned an empty title.")]
     EmptyTitle,

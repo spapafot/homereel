@@ -2,17 +2,23 @@ import { Icon } from '@/components/common/Icon';
 import { api, type VideoSource } from '@/lib/api';
 import { toAppError } from '@/lib/app-error';
 import type { PlaybackError } from '@/lib/playback-error';
+import { IS_MAC } from '@/lib/platform';
 import { showToast } from '@/lib/toast';
 
 type ErrorMessage = { title: string; detail: string };
 
-const NO_PICTURE_MESSAGE: ErrorMessage = {
-  title: 'Homereel can play this video’s sound but not its picture',
-  detail:
-    'It’s most likely HEVC (H.265), the format iPhones record in. Windows needs Microsoft’s ' +
-    'HEVC Video Extensions to show it. Install them from the Microsoft Store, then close and ' +
-    'reopen Homereel.',
-};
+const NO_PICTURE_TITLE = 'Homereel can play this video’s sound but not its picture';
+
+/** macOS decodes HEVC itself, so there is no codec to install there. */
+const NO_PICTURE_MESSAGE: ErrorMessage = IS_MAC
+  ? { title: NO_PICTURE_TITLE, detail: 'Its video format isn’t supported on this Mac.' }
+  : {
+      title: NO_PICTURE_TITLE,
+      detail:
+        'It’s most likely HEVC (H.265), the format iPhones record in. Windows needs Microsoft’s ' +
+        'HEVC Video Extensions to show it. Install them from the Microsoft Store, then close ' +
+        'and reopen Homereel.',
+    };
 
 /** Where a video that can't play here can still be watched. */
 const ELSEWHERE_LABELS: Record<VideoSource, string> = {
@@ -69,13 +75,14 @@ export function PlaybackErrorOverlay({
   onOpenElsewhere,
 }: PlaybackErrorOverlayProps) {
   const message = ERROR_MESSAGES[source][error];
+  const offersCodec = error === 'noPicture' && !IS_MAC;
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/85 px-6 text-center text-white">
       <Icon name="error" size={48} />
       <p className="text-lg font-medium">{message.title}</p>
       <p className="max-w-md text-sm text-white/70">{message.detail}</p>
       <div className="mt-2 flex flex-wrap justify-center gap-2">
-        {error === 'noPicture' && (
+        {offersCodec && (
           <button type="button" onClick={openHevcStore} className={PRIMARY_BUTTON}>
             Get HEVC Video Extensions
           </button>
@@ -89,7 +96,7 @@ export function PlaybackErrorOverlay({
         <button
           type="button"
           onClick={onOpenElsewhere}
-          className={error === 'noPicture' ? SECONDARY_BUTTON : PRIMARY_BUTTON}
+          className={offersCodec ? SECONDARY_BUTTON : PRIMARY_BUTTON}
         >
           {ELSEWHERE_LABELS[source]}
         </button>

@@ -8,7 +8,7 @@ pub const DRIVE_API_BASE: &str = "https://www.googleapis.com/drive/v3";
 /// `drive.readonly` is required because frame extraction for AI titles reads file contents.
 pub const DRIVE_READONLY_SCOPE: &str = "https://www.googleapis.com/auth/drive.readonly";
 
-/// Service name for entries in Windows Credential Manager.
+/// Service name for entries in Windows Credential Manager and the macOS keychain.
 pub const KEYRING_SERVICE: &str = "com.homereel.desktop";
 pub const GEMINI_KEY_NAME: &str = "gemini-api-key";
 
@@ -28,7 +28,7 @@ pub fn google_client() -> Option<OAuthClient> {
 }
 
 /// Development convenience: `GEMINI_API_KEY` from the project's `.env`. Release builds never
-/// read `.env`; there the key is entered in Settings and kept in Credential Manager.
+/// read `.env`; there the key is entered in Settings and kept in the system credential store.
 #[cfg(debug_assertions)]
 pub fn dev_gemini_key() -> Option<String> {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))

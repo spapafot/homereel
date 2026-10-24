@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>NSDesktopFolderUsageDescription</key>
+  <string>Homereel reads the videos in folders you choose. It never changes them.</string>
+  <key>NSDocumentsFolderUsageDescription</key>
+  <string>Homereel reads the videos in folders you choose. It never changes them.</string>
+  <key>NSDownloadsFolderUsageDescription</key>
+  <string>Homereel reads the videos in folders you choose. It never changes them.</string>
+  <key>NSRemovableVolumesUsageDescription</key>
+  <string>Homereel reads the videos in folders you choose. It never changes them.</string>
+  <key>NSNetworkVolumesUsageDescription</key>
+  <string>Homereel reads the videos in folders you choose. It never changes them.</string>
+</dict>
+</plist>

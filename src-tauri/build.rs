@@ -6,7 +6,14 @@ const SECRET_KEY: &str = "HOMEREEL_GOOGLE_CLIENT_SECRET";
 
 fn main() {
     embed_google_client_credentials();
+    embed_target_triple();
     tauri_build::build()
+}
+
+/// `ffmpeg.rs` finds the downloaded sidecar by the target-triple name Tauri's externalBin uses.
+fn embed_target_triple() {
+    let target = std::env::var("TARGET").expect("Cargo sets TARGET for build scripts");
+    println!("cargo:rustc-env=HOMEREEL_TARGET_TRIPLE={target}");
 }
 
 /// Google Desktop OAuth clients are public clients: their secret is not confidential, but it

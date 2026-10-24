@@ -383,7 +383,7 @@ mod tests {
     /// Drive often has no thumbnail for iPhone HEVC `.MOV` files; a frame is extracted instead.
     #[tokio::test]
     async fn extracts_a_frame_when_drive_has_no_thumbnail() {
-        let ffmpeg = ffmpeg::locate_ffmpeg().expect("run scripts/fetch-ffmpeg.ps1 first");
+        let ffmpeg = ffmpeg::locate_ffmpeg().expect("run scripts/fetch-ffmpeg.ps1 or .sh first");
         let clip_dir = tempfile::tempdir().unwrap();
         let clip = clip_dir.path().join("clip.mp4");
         let status = std::process::Command::new(&ffmpeg)
@@ -452,7 +452,7 @@ mod tests {
 
     #[tokio::test]
     async fn regenerates_from_the_most_detailed_frame_or_the_chosen_moment() {
-        let ffmpeg = ffmpeg::locate_ffmpeg().expect("run scripts/fetch-ffmpeg.ps1 first");
+        let ffmpeg = ffmpeg::locate_ffmpeg().expect("run scripts/fetch-ffmpeg.ps1 or .sh first");
         let clip_dir = tempfile::tempdir().unwrap();
         let clip = clip_dir.path().join("clip.mp4");
         black_then_pattern_clip(&ffmpeg, &clip);
