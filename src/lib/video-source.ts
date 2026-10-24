@@ -1,4 +1,5 @@
 import { api, type VideoSource, type VideoSummary } from './api';
+import { FILE_MANAGER_NAME } from './platform';
 import { showToast } from './toast';
 
 /** Shown under a folder's name, where YouTube shows a channel's subscriber count. */
@@ -20,16 +21,16 @@ export function openVideoElsewhere(video: Pick<VideoSummary, 'id' | 'source'>) {
   });
 }
 
-/** Opens File Explorer with a local video selected. */
+/** Opens File Explorer or Finder with a local video selected. */
 export function showVideoInFolder(videoId: string) {
   api.videoShowInFolder(videoId).catch((error: unknown) => {
     console.error('Could not show the video in its folder', error);
-    showToast('Could not open File Explorer');
+    showToast(`Could not open ${FILE_MANAGER_NAME}`);
   });
 }
 
 /**
- * Where the video lives: on its Drive page for Drive videos, in File Explorer for local ones.
+ * Where the video lives: on its Drive page for Drive videos, in the file manager for local ones.
  * Used by "Open in Google Drive" and "Show in folder".
  */
 export function revealVideo(video: Pick<VideoSummary, 'id' | 'source'>) {

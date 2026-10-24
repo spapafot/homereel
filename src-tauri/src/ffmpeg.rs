@@ -46,7 +46,8 @@ pub fn locate_ffmpeg() -> Option<PathBuf> {
         let sidecar = Path::new(env!("CARGO_MANIFEST_DIR"))
             .join("binaries")
             .join(format!(
-                "ffmpeg-x86_64-pc-windows-msvc{}",
+                "ffmpeg-{}{}",
+                env!("HOMEREEL_TARGET_TRIPLE"),
                 std::env::consts::EXE_SUFFIX
             ));
         if sidecar.exists() {
@@ -366,8 +367,8 @@ mod tests {
 
     #[tokio::test]
     async fn fits_previews_into_the_long_edge_without_upscaling() {
-        let ffmpeg =
-            locate_ffmpeg().expect("run scripts/fetch-ffmpeg.ps1 to install the ffmpeg sidecar");
+        let ffmpeg = locate_ffmpeg()
+            .expect("run scripts/fetch-ffmpeg.ps1 or .sh to install the ffmpeg sidecar");
         let dir = tempfile::tempdir().unwrap();
         let large = dir.path().join("large.mp4");
         let small = dir.path().join("small.mp4");
@@ -388,8 +389,8 @@ mod tests {
     /// iPhones record 10-bit HEVC in HLG; the probe must spot it and the tone mapper must run.
     #[tokio::test]
     async fn tone_maps_hlg_previews() {
-        let ffmpeg =
-            locate_ffmpeg().expect("run scripts/fetch-ffmpeg.ps1 to install the ffmpeg sidecar");
+        let ffmpeg = locate_ffmpeg()
+            .expect("run scripts/fetch-ffmpeg.ps1 or .sh to install the ffmpeg sidecar");
         let dir = tempfile::tempdir().unwrap();
         let clip = dir.path().join("hlg.mp4");
         let status = std::process::Command::new(&ffmpeg)
@@ -414,8 +415,8 @@ mod tests {
 
     #[tokio::test]
     async fn probes_the_size_of_a_rotated_clip() {
-        let ffmpeg =
-            locate_ffmpeg().expect("run scripts/fetch-ffmpeg.ps1 to install the ffmpeg sidecar");
+        let ffmpeg = locate_ffmpeg()
+            .expect("run scripts/fetch-ffmpeg.ps1 or .sh to install the ffmpeg sidecar");
         let dir = tempfile::tempdir().unwrap();
         let clip = dir.path().join("landscape.mp4");
         let rotated = dir.path().join("portrait.mp4");
@@ -445,8 +446,8 @@ mod tests {
     /// Exercises the real sidecar on a generated clip, including a file whose index is at the end.
     #[tokio::test]
     async fn extracts_frames_from_a_generated_clip() {
-        let ffmpeg =
-            locate_ffmpeg().expect("run scripts/fetch-ffmpeg.ps1 to install the ffmpeg sidecar");
+        let ffmpeg = locate_ffmpeg()
+            .expect("run scripts/fetch-ffmpeg.ps1 or .sh to install the ffmpeg sidecar");
         let dir = tempfile::tempdir().unwrap();
         let clip = dir.path().join("clip.mp4");
         let status = std::process::Command::new(&ffmpeg)

@@ -61,7 +61,7 @@ pub async fn playback_open_external(
         .map_err(|error| AppError::internal(format!("Could not open the browser: {error}")))
 }
 
-/// Shows a video on this computer in File Explorer, selected in its folder.
+/// Shows a video on this computer in File Explorer or Finder, selected in its folder.
 #[tauri::command]
 pub async fn video_show_in_folder(
     app: AppHandle,
@@ -78,7 +78,9 @@ pub async fn video_show_in_folder(
         .ok_or(AppError::NotFound)?;
     app.opener()
         .reveal_item_in_dir(&video.path)
-        .map_err(|error| AppError::internal(format!("Could not open File Explorer: {error}")))
+        .map_err(|error| {
+            AppError::internal(format!("Could not show the video in its folder: {error}"))
+        })
 }
 
 /// Microsoft's HEVC Video Extensions ($0.99). WebView2 decodes HEVC, which iPhones record in,

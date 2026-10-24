@@ -11,11 +11,17 @@ pub trait SecretStore: Send + Sync {
     fn delete(&self, key: &str) -> AppResult<()>;
 }
 
-/// Registers Windows Credential Manager as the process-wide keyring store.
+/// Registers the system credential store (Windows Credential Manager, or the login keychain on
+/// macOS) as the process-wide keyring store.
 pub fn init_platform_store() -> AppResult<()> {
     #[cfg(windows)]
     {
         let store = windows_native_keyring_store::Store::new().map_err(keyring_error)?;
+        keyring_core::set_default_store(store);
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let store = apple_native_keyring_store::keychain::Store::new().map_err(keyring_error)?;
         keyring_core::set_default_store(store);
     }
     Ok(())
@@ -33,8 +39,12 @@ impl KeyringSecretStore {
     }
 
     fn entry(&self, key: &str) -> AppResult<Entry> {
-        // "Local" keeps the credential on this machine instead of roaming with the profile.
+        // "Local" keeps the credential on this machine instead of roaming with the profile. The
+        // macOS keychain store rejects modifiers it doesn't know, so it gets none.
+        #[cfg(windows)]
         let modifiers = HashMap::from([("persistence", "Local")]);
+        #[cfg(not(windows))]
+        let modifiers = HashMap::new();
         Entry::new_with_modifiers(&self.service, key, &modifiers).map_err(keyring_error)
     }
 }
@@ -71,7 +81,7 @@ fn keyring_error(error: KeyringError) -> AppError {
         KeyringError::TooLong(name, limit) => format!("{name} exceeds the {limit}-byte limit"),
         _ => "unexpected credential store error".into(),
     };
-    AppError::internal(format!("Credential Manager error: {detail}"))
+    AppError::internal(format!("Credential store error: {detail}"))
 }
 
 #[cfg(test)]

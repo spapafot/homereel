@@ -43,17 +43,30 @@ In each case, use **Connect Google Drive** again.
 1. Create a key at <https://aistudio.google.com> in a project with **billing enabled**. On the
    free tier, Google may use the submitted frames to improve its products.
 2. In Homereel, open **Settings → AI titles**, paste the key and click **Save key**. It is
-   checked with Gemini and stored in Windows Credential Manager, never in a file.
+   checked with Gemini and stored in Windows Credential Manager or the macOS keychain, never in
+   a file.
 3. Click **Generate missing titles**. Each video is titled once (about $0.002 per video with
    `gemini-3.8-flash`); rerunning skips videos that already have a title. Drive files are never
    renamed.
 
-Development builds also import `GEMINI_API_KEY` from the project's `.env` into Credential
-Manager on first launch. Release builds never read `.env`.
+Development builds also import `GEMINI_API_KEY` from the project's `.env` into the credential
+store on first launch. Release builds never read `.env`.
 
 ## Toolchain
+
+### Windows
 
 - Node 24+, npm
 - Rust stable (MSVC) through rustup, plus Visual Studio 2022 Build Tools with the C++ workload
 - WebView2 Runtime (preinstalled on Windows 11)
 - ffmpeg sidecar: `powershell -ExecutionPolicy Bypass -File scripts/fetch-ffmpeg.ps1`
+
+### macOS (Apple Silicon)
+
+- Node 24+, npm
+- Xcode Command Line Tools: `xcode-select --install`
+- Rust stable, through Homebrew (`brew install rust`) or rustup
+- ffmpeg sidecar: `bash scripts/fetch-ffmpeg.sh`
+
+The same Google OAuth client works on both systems. Copy `src-tauri/google-oauth-client.json`
+to each computer you build on.

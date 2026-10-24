@@ -55,7 +55,7 @@ pub fn gemini_settings_get(state: State<'_, AppState>) -> AppResult<GeminiSettin
     gemini_settings(&state)
 }
 
-/// Validates the key with Gemini, then stores it in Windows Credential Manager.
+/// Validates the key with Gemini, then stores it in the system credential store.
 #[tauri::command]
 pub async fn gemini_key_set(
     state: State<'_, AppState>,

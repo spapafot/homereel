@@ -102,14 +102,14 @@ impl AppState {
         Ok(state)
     }
 
-    /// Copies `GEMINI_API_KEY` from `.env` into Credential Manager once, in development builds.
+    /// Copies `GEMINI_API_KEY` from `.env` into the credential store once, in development builds.
     #[cfg(debug_assertions)]
     fn import_dev_gemini_key(&self) -> AppResult<()> {
         if self.secrets.get(GEMINI_KEY_NAME)?.is_none()
             && let Some(key) = config::dev_gemini_key()
         {
             self.secrets.set(GEMINI_KEY_NAME, &key)?;
-            log::info!("Imported GEMINI_API_KEY from .env into Windows Credential Manager");
+            log::info!("Imported GEMINI_API_KEY from .env into the credential store");
         }
         Ok(())
     }

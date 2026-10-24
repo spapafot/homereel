@@ -61,6 +61,9 @@ describe('LibraryGate', () => {
 
       expect(await screen.findByRole('button', { name: 'Add a folder' })).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /Sign in/ })).not.toBeInTheDocument();
+      expect(
+        screen.getByText('Drive connect is not available. Contact Homereel.'),
+      ).toBeInTheDocument();
     });
 
     it('should show the library once a folder is added', async () => {

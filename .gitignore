@@ -21,8 +21,9 @@ src-tauri/gen/schemas
 src-tauri/google-oauth-client.json
 client_secret_*.json
 
-# ffmpeg sidecar is downloaded by scripts/fetch-ffmpeg.ps1, not committed
+# ffmpeg sidecar is downloaded by scripts/fetch-ffmpeg.ps1 (Windows) or fetch-ffmpeg.sh (macOS)
 src-tauri/binaries/*.exe
+src-tauri/binaries/ffmpeg-*-apple-darwin
 
 # Editor directories and files
 .vscode/*
