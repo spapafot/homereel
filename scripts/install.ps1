@@ -171,8 +171,13 @@ param(
     Write-Host "Using the Google OAuth client from $Source"
   }
 
-  if ([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture -ne 'X64') {
-    throw 'Homereel builds for x64 Windows only.'
+  # 32-bit PowerShell on 64-bit Windows sees x86 here and the OS architecture in ...W6432.
+  $OsArchitecture = $env:PROCESSOR_ARCHITECTURE
+  if ($env:PROCESSOR_ARCHITEW6432) {
+    $OsArchitecture = $env:PROCESSOR_ARCHITEW6432
+  }
+  if ($OsArchitecture -ne 'AMD64') {
+    throw "Homereel builds for x64 Windows only. This computer reports '$OsArchitecture'."
   }
 
   Install-Toolchain
