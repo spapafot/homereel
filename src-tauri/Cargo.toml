@@ -1,6 +1,6 @@
 [package]
 name = "homereel"
-version = "0.1.0"
+version = "0.1.1"
 description = "A YouTube-style library for your own videos, in Google Drive or on this computer"
 authors = ["Stratos Papafotiou"]
 license = "MIT"
