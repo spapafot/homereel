@@ -71,6 +71,38 @@ ensure_command_line_tools() {
   done
 }
 
+# Links an empty C program, as the Rust build does for every build script.
+can_link() {
+  local work_dir
+  local linked=true
+  work_dir="$(mktemp -d -t homereel-link)"
+  printf 'int main(void) { return 0; }\n' > "$work_dir/main.c"
+  cc "$work_dir/main.c" -o "$work_dir/main" 2>/dev/null || linked=false
+  rm -rf "$work_dir"
+  [[ "$linked" == true ]]
+}
+
+# The compiler uses the newest SDK in the developer folder, which can be newer than the linker,
+# for example one left behind by a beta of the Command Line Tools. MacOSX.sdk there is the SDK
+# that came with the installed tools.
+ensure_linker() {
+  if can_link; then
+    return
+  fi
+  local developer_dir
+  developer_dir="$(xcode-select -p)"
+  local sdk
+  for sdk in "$developer_dir/SDKs/MacOSX.sdk" \
+    "$developer_dir/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk"; do
+    if [[ -d "$sdk" ]] && SDKROOT="$sdk" can_link; then
+      export SDKROOT="$sdk"
+      echo "The default macOS SDK does not work with the installed linker. Building with $sdk."
+      return
+    fi
+  done
+  fail "The tools in $developer_dir cannot link programs. Reinstall them. $TOOLCHAIN_HELP."
+}
+
 ensure_node() {
   if (( $(node_major) >= MIN_NODE_MAJOR )); then
     return
@@ -227,6 +259,7 @@ main() {
   fi
 
   ensure_command_line_tools
+  ensure_linker
   ensure_node
   ensure_rust
   get_source
