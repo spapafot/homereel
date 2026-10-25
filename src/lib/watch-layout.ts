@@ -17,6 +17,10 @@ const SECONDARY_SHARE = 0.275;
 const SECONDARY_MIN_WIDTH_PX = 320;
 const SECONDARY_MAX_WIDTH_PX = 700;
 const SECONDARY_MAX_SHARE = 0.35;
+/** The masthead plus room for the title under the player, as in YouTube's `100vh - 169px`. */
+const THEATER_NON_PLAYER_HEIGHT_PX = 169;
+const THEATER_MIN_HEIGHT_PX = 480;
+const SINGLE_COLUMN_THEATER_MIN_HEIGHT_PX = 240;
 
 export type WatchColumns = {
   twoColumns: boolean;
@@ -44,4 +48,21 @@ export function watchColumns(viewportWidth: number, viewportHeight: number): Wat
   );
   const secondaryWidth = Math.round(Math.min(clamped, viewportWidth * SECONDARY_MAX_SHARE));
   return { twoColumns: true, secondaryWidth, maxPrimaryWidth };
+}
+
+/**
+ * Height of the theater mode player, which spans the whole window above both columns
+ * (`#player-full-bleed-container`): 16:9 to the window's width, short enough to leave room for
+ * the title, but never shorter than YouTube's minimum.
+ */
+export function theaterPlayerHeight(viewportWidth: number, viewportHeight: number): number {
+  const minHeight =
+    viewportWidth < TWO_COLUMN_MIN_WIDTH_PX
+      ? SINGLE_COLUMN_THEATER_MIN_HEIGHT_PX
+      : THEATER_MIN_HEIGHT_PX;
+  const fittedHeight = Math.min(
+    viewportWidth / PLAYER_ASPECT_RATIO,
+    viewportHeight - THEATER_NON_PLAYER_HEIGHT_PX,
+  );
+  return Math.round(Math.max(minHeight, fittedHeight));
 }

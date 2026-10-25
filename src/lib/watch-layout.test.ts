@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { watchColumns } from './watch-layout';
+import { theaterPlayerHeight, watchColumns } from './watch-layout';
 
 describe('watchColumns', () => {
   it('should come within a few pixels of the column YouTube shows in a 1972px window', () => {
@@ -39,5 +39,23 @@ describe('watchColumns', () => {
 
     expect(columns.twoColumns).toBe(false);
     expect(columns.secondaryWidth).toBe(0);
+  });
+});
+
+describe('theaterPlayerHeight', () => {
+  it('should make the player 16:9 across the window when the window is tall enough', () => {
+    expect(theaterPlayerHeight(1600, 1200)).toBe(900);
+  });
+
+  it('should leave 169px of a short window for the masthead and the title', () => {
+    expect(theaterPlayerHeight(2000, 1000)).toBe(831);
+  });
+
+  it('should keep the player at least 480px tall beside the related column', () => {
+    expect(theaterPlayerHeight(1200, 600)).toBe(480);
+  });
+
+  it('should allow a 240px player once the related videos move under it', () => {
+    expect(theaterPlayerHeight(800, 380)).toBe(240);
   });
 });

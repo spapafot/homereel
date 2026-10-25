@@ -5,6 +5,7 @@ import {
   useImperativeHandle,
   useRef,
   useState,
+  type ReactElement,
   type ReactNode,
   type Ref,
 } from 'react';
@@ -20,6 +21,7 @@ import { readVolume, saveVolume, VOLUME_STEP } from '@/lib/volume-preference';
 
 import { PlaybackErrorOverlay } from './PlaybackErrorOverlay';
 import { ProgressBar } from './ProgressBar';
+import { TheaterIcon } from './TheaterIcon';
 
 const HIDE_CONTROLS_AFTER_MS = 2500;
 const SHORT_SEEK_SECONDS = 5;
@@ -45,6 +47,9 @@ type VideoPlayerProps = {
   startAtMs?: number | null;
   /** Called every few seconds, on pause, at the end and when leaving, to save the resume point. */
   onProgress?: (positionMs: number, durationMs: number) => void;
+  /** Theater mode: the player spans the window's width without going full screen. */
+  isTheater: boolean;
+  onToggleTheater: () => void;
   ref?: Ref<PlayerHandle>;
 };
 
@@ -59,7 +64,8 @@ function PlayerButton({
   label,
   onClick,
 }: {
-  icon: string;
+  /** A Material Symbols name, or a glyph drawn for the player. */
+  icon: string | ReactElement;
   label: string;
   onClick: () => void;
 }) {
@@ -71,14 +77,15 @@ function PlayerButton({
       onClick={onClick}
       className="flex size-12 items-center justify-center rounded-full outline-none hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white"
     >
-      <Icon name={icon} filled size={28} />
+      {typeof icon === 'string' ? <Icon name={icon} filled size={28} /> : icon}
     </button>
   );
 }
 
 /**
  * YouTube-style player for videos streamed through the local media proxy. Keyboard shortcuts
- * follow YouTube: k/space play, j/l and arrows seek, f fullscreen, m mute, Shift+N next.
+ * follow YouTube: k/space play, j/l and arrows seek, f fullscreen, t theater mode, m mute,
+ * Shift+N next.
  */
 export function VideoPlayer({
   src,
@@ -90,6 +97,8 @@ export function VideoPlayer({
   onOpenElsewhere,
   startAtMs,
   onProgress,
+  isTheater,
+  onToggleTheater,
   ref,
 }: VideoPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -229,6 +238,7 @@ export function VideoPlayer({
       else if (key === 'arrowup') changeVolume(video.volume + VOLUME_STEP);
       else if (key === 'arrowdown') changeVolume(video.volume - VOLUME_STEP);
       else if (key === 'f') toggleFullscreen();
+      else if (key === 't' && !document.fullscreenElement) onToggleTheater();
       else if (key === 'm') toggleMute();
       else if (key === 'n' && event.shiftKey && hasNext) onNext();
       else return;
@@ -242,6 +252,7 @@ export function VideoPlayer({
     seekTo,
     changeVolume,
     toggleFullscreen,
+    onToggleTheater,
     toggleMute,
     hasNext,
     onNext,
@@ -268,7 +279,7 @@ export function VideoPlayer({
       onMouseLeave={() => isPlaying && setControlsVisible(false)}
       className={cx(
         'relative w-full overflow-hidden bg-black',
-        isFullscreen ? 'h-full' : 'aspect-video max-h-[calc(100vh-169px)] rounded-xl',
+        isFullscreen || isTheater ? 'h-full' : 'aspect-video max-h-[calc(100vh-169px)] rounded-xl',
         !controlsShown && 'cursor-none',
       )}
     >
@@ -392,6 +403,13 @@ export function VideoPlayer({
               </PlayerPill>
             </div>
             <PlayerPill>
+              {!isFullscreen && (
+                <PlayerButton
+                  icon={<TheaterIcon isTheater={isTheater} />}
+                  label={isTheater ? 'Default view (t)' : 'Theater mode (t)'}
+                  onClick={onToggleTheater}
+                />
+              )}
               <PlayerButton
                 icon={isFullscreen ? 'fullscreen_exit' : 'fullscreen'}
                 label={isFullscreen ? 'Exit full screen (f)' : 'Full screen (f)'}

@@ -24,6 +24,8 @@ function renderPlayer(overrides: Partial<Parameters<typeof VideoPlayer>[0]> = {}
     onNext: vi.fn(),
     videoSource: 'drive' as const,
     onOpenElsewhere: vi.fn(),
+    isTheater: false,
+    onToggleTheater: vi.fn(),
     ...overrides,
   };
   const view = render(<VideoPlayer {...props} />);
@@ -99,6 +101,33 @@ describe('VideoPlayer', () => {
     await user.keyboard('k');
 
     expect(HTMLMediaElement.prototype.play).toHaveBeenCalled();
+  });
+
+  describe('theater mode', () => {
+    it('should switch to theater mode from the button beside full screen', async () => {
+      const user = userEvent.setup();
+      const { props } = renderPlayer();
+
+      await user.click(screen.getByRole('button', { name: 'Theater mode (t)' }));
+
+      expect(props.onToggleTheater).toHaveBeenCalledOnce();
+    });
+
+    it('should toggle with the t shortcut like YouTube', async () => {
+      const user = userEvent.setup();
+      const { props } = renderPlayer();
+
+      await user.keyboard('t');
+
+      expect(props.onToggleTheater).toHaveBeenCalledOnce();
+    });
+
+    it('should offer the default view while in theater mode', () => {
+      renderPlayer({ isTheater: true });
+
+      expect(screen.getByRole('button', { name: 'Default view (t)' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Theater mode (t)' })).toBeNull();
+    });
   });
 
   it('should go to the next video when playback ends with auto-advance on', () => {

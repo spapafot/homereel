@@ -30,6 +30,7 @@ import {
   useVideo,
   useVideoFeed,
 } from '@/hooks/use-videos';
+import { useTheaterMode } from '@/hooks/use-theater-mode';
 import { useViewportHeight, useViewportWidth } from '@/hooks/use-viewport-size';
 import { useWatchList, type WatchList } from '@/hooks/use-watch-list';
 import { api, type VideoSummary } from '@/lib/api';
@@ -42,7 +43,7 @@ import { pickNextVideo } from '@/lib/up-next';
 import { patchVideoInCaches } from '@/lib/video-cache';
 import { dateCreated, videoDetailsParts } from '@/lib/video-meta';
 import { FOLDER_KIND_LABELS, openVideoElsewhere, revealVideo } from '@/lib/video-source';
-import { watchColumns } from '@/lib/watch-layout';
+import { theaterPlayerHeight, watchColumns } from '@/lib/watch-layout';
 
 type RelatedMode = 'folder' | 'recent';
 
@@ -101,7 +102,11 @@ function WatchContent({ videoId, contextFolderId, listId }: WatchContentProps) {
   // cached video do not make it jump.
   const startAtMs = resumePoint(video.data);
   const showFolder = relatedMode === 'folder' && folderId != null;
-  const columns = watchColumns(useViewportWidth(), useViewportHeight());
+  const viewportWidth = useViewportWidth();
+  const viewportHeight = useViewportHeight();
+  const columns = watchColumns(viewportWidth, viewportHeight);
+  const [isTheater, toggleTheater] = useTheaterMode();
+  const theaterHeight = isTheater ? theaterPlayerHeight(viewportWidth, viewportHeight) : 0;
 
   // Up next follows the folder page's default order.
   const folderFeed = useVideoFeed(
@@ -174,35 +179,48 @@ function WatchContent({ videoId, contextFolderId, listId }: WatchContentProps) {
 
   return (
     // YouTube's margins: 12px under the masthead, 16px at the sides and between the columns.
+    // Theater mode lifts the player out of its column to span the window above both columns; it
+    // keeps its place in the tree, so switching modes doesn't restart the video.
     <div
       className={cx(
-        'flex gap-4 px-4 pt-3 pb-12',
+        'relative flex gap-4 px-4 pb-12',
+        !isTheater && 'pt-3',
         columns.twoColumns ? 'justify-center' : 'flex-col',
       )}
+      style={isTheater ? { paddingTop: theaterHeight } : undefined}
     >
       <div
         className={cx('min-w-0', columns.twoColumns ? 'flex-1' : 'mx-auto w-full')}
         style={{ maxWidth: columns.maxPrimaryWidth }}
       >
-        {source.isError ? (
-          <div className="aspect-video w-full rounded-xl bg-skeleton">
-            <ErrorState error={source.error} onRetry={() => source.refetch()} />
-          </div>
-        ) : (
-          <VideoPlayer
-            ref={playerRef}
-            src={source.data?.url}
-            title={video.data?.title ?? ''}
-            hasNext={nextVideo != null}
-            // Only a list plays through on its own; a folder video stops at its end.
-            autoAdvance={list != null}
-            onNext={goToNext}
-            videoSource={videoSource}
-            onOpenElsewhere={openElsewhere}
-            startAtMs={startAtMs}
-            onProgress={saveProgress}
-          />
-        )}
+        <div
+          className={cx(isTheater && 'absolute inset-x-0 top-0 bg-black')}
+          style={isTheater ? { height: theaterHeight } : undefined}
+        >
+          {source.isError ? (
+            <div
+              className={cx('w-full bg-skeleton', isTheater ? 'h-full' : 'aspect-video rounded-xl')}
+            >
+              <ErrorState error={source.error} onRetry={() => source.refetch()} />
+            </div>
+          ) : (
+            <VideoPlayer
+              ref={playerRef}
+              src={source.data?.url}
+              title={video.data?.title ?? ''}
+              hasNext={nextVideo != null}
+              // Only a list plays through on its own; a folder video stops at its end.
+              autoAdvance={list != null}
+              onNext={goToNext}
+              videoSource={videoSource}
+              onOpenElsewhere={openElsewhere}
+              startAtMs={startAtMs}
+              onProgress={saveProgress}
+              isTheater={isTheater}
+              onToggleTheater={toggleTheater}
+            />
+          )}
+        </div>
         {video.data ? (
           <VideoDetails
             video={video.data}
@@ -220,7 +238,11 @@ function WatchContent({ videoId, contextFolderId, listId }: WatchContentProps) {
       </div>
 
       <aside
-        className="flex shrink-0 flex-col gap-3"
+        className={cx(
+          'flex shrink-0 flex-col gap-3',
+          // YouTube's 16px between the theater player and the related column.
+          isTheater && columns.twoColumns && 'mt-4',
+        )}
         style={columns.twoColumns ? { width: columns.secondaryWidth } : undefined}
       >
         {list && <PlaylistPanel list={list} currentId={videoId} />}
