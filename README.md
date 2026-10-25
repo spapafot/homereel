@@ -42,6 +42,36 @@ These screenshots use blurred media and generic sample titles, names and descrip
 
 </details>
 
+## Install
+
+The install script builds Homereel from source and installs it. It checks the toolchain and
+offers to install what is missing (with winget on Windows, Homebrew and rustup on macOS). Then it
+asks for your Google OAuth client JSON: create the client first as described in
+[docs/setup.md](docs/setup.md), or press Enter to build without Google Drive. Videos in folders on
+the computer play either way.
+
+**Windows**, in PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/spapafot/homereel/main/scripts/install.ps1 | iex
+```
+
+**macOS (Apple Silicon)**, in Terminal:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/spapafot/homereel/main/scripts/install.sh | bash
+```
+
+The script clones the source to `homereel` in your home folder (set `HOMEREEL_DIR` to change it)
+and keeps the OAuth client there. Run the same command again to update. The first build takes
+several minutes. On Windows, installing the Visual Studio Build Tools takes longer and asks for
+administrator approval.
+
+In a clone of this repository, `powershell -ExecutionPolicy Bypass -File scripts/install.ps1` or
+`bash scripts/install.sh` builds and installs that clone as it is, without pulling.
+
+The rest of this README covers building by hand and development.
+
 ## First-time setup
 
 1. Install the toolchain (Node, Rust, and Visual Studio Build Tools on Windows or the Xcode

@@ -54,6 +54,9 @@ store on first launch. Release builds never read `.env`.
 
 ## Toolchain
 
+`scripts/install.ps1` and `scripts/install.sh` check for these and offer to install what is
+missing. To set them up by hand:
+
 ### Windows
 
 - Node 24+, npm
